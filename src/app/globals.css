@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Marca DevEducation (fixa nos dois temas) ─────────── */
+  --color-navy-950: #000a3c;
+  --color-brand-600: #0250b4;
+  --color-brand-500: #0364dc;
+  --color-brand-400: #029ef8;
+  --color-brand-300: #05cefc;
+
+  /* ── Tokens semânticos (invertidos no tema escuro) ────── */
+  --color-navy-900: #06174e;
+  --color-navy-800: #0d2166;
+  --color-brand-100: #d3ecfd;
+  --color-brand-50: #eef7fe;
+  --color-ink-900: #0b1220;
+  --color-ink-700: #2c3752;
+  --color-ink-500: #5b6784;
+  --color-ink-400: #7c88a3;
+  --color-line: #e4e8f0;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f9fc;
+
+  /* ── Barra lateral: escura nos dois temas ─────────────── */
+  --color-rail: #030c33;
+  --color-rail-raised: #0a1a4d;
+  --color-rail-line: #142352;
+  --color-rail-text: #97a6cd;
+  --color-rail-text-strong: #eef3ff;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 0.75rem;
+
+  --shadow-soft: 0 1px 2px rgb(6 23 78 / 0.04), 0 1px 3px rgb(6 23 78 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(6 23 78 / 0.05), 0 8px 20px rgb(6 23 78 / 0.08);
+}
+
+/* O tema é sempre explícito no elemento raiz — nunca depende só da mídia,
+   para que o botão de alternância vença em ambas as direções. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+[data-theme="dark"] {
+  --color-navy-900: #f2f6ff;
+  --color-navy-800: #dbe4fb;
+  --color-brand-100: #1d3272;
+  --color-brand-50: #111f4a;
+  --color-ink-900: #eaf0ff;
+  --color-ink-700: #b7c3e2;
+  --color-ink-500: #8d9bc1;
+  --color-ink-400: #6d7ca6;
+  --color-line: #1a2851;
+  --color-surface: #060f2e;
+  --color-surface-muted: #0b1740;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 1px 3px rgb(0 0 0 / 0.25);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.3), 0 8px 20px rgb(0 0 0 / 0.35);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    background: var(--color-rail);
+  }
+
+  body {
+    background: var(--color-surface);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--color-brand-100);
+    color: var(--color-navy-900);
+  }
+}
+
+@utility brand-gradient {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-brand-500) 0%,
+    var(--color-brand-400) 55%,
+    var(--color-brand-300) 100%
+  );
+}
+
+/* Transições curtas e discretas — ferramenta de produtividade, não vitrine. */
+@utility transition-quick {
+  transition-property: color, background-color, border-color, box-shadow, opacity,
+    transform;
+  transition-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+  transition-duration: 180ms;
+}
+
+/* Carrosséis horizontais sem barra visível, mantendo o scroll por teclado. */
+@utility scroll-rail {
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+
+  & > * > * {
+    scroll-snap-align: start;
+  }
+}
+
+@utility scroll-rail-hidden {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
