@@ -16,10 +16,16 @@ const SOURCE_GROUPS: {
   unit: string;
   types: ResourceType[];
 }[] = [
-  { label: "Vídeos e cursos", unit: "conteúdos", types: ["video", "course"] },
-  { label: "Documentações", unit: "fontes", types: ["documentation"] },
-  { label: "PDFs & Artigos", unit: "documentos", types: ["pdf", "article"] },
-  { label: "Repositórios", unit: "projetos", types: ["repository", "tool"] },
+  // Um grupo por tipo, e não os cinco agrupamentos antigos: agora que cursos,
+  // livros e ferramentas existem em quantidade, juntá-los escondia justamente
+  // as categorias que o catálogo passou a ter.
+  { label: "Artigos e estudos", unit: "textos", types: ["article"] },
+  { label: "Projetos", unit: "repositórios", types: ["repository"] },
+  { label: "Documentações", unit: "referências", types: ["documentation"] },
+  { label: "Vídeos", unit: "aulas", types: ["video"] },
+  { label: "Cursos", unit: "trilhas", types: ["course"] },
+  { label: "Livros e PDFs", unit: "publicações", types: ["pdf"] },
+  { label: "Ferramentas", unit: "utilitários", types: ["tool"] },
   { label: "Exercícios", unit: "conjuntos", types: ["exercise"] },
 ];
 

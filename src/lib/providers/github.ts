@@ -3,6 +3,7 @@ import "server-only";
 import {
   detectDifficulty,
   detectLanguage,
+  detectResourceType,
   domainOf,
   slugify,
   type ContentProvider,
@@ -79,10 +80,47 @@ export const githubProvider: ContentProvider = {
     const payload = (await response.json()) as { items?: GitHubRepo[] };
 
     return (payload.items ?? [])
-      .filter((repo) => !repo.archived && repo.description)
+      .filter(isWorthCataloguing)
       .map((repo) => toResult(repo, topicSlug));
   },
 };
+
+/**
+ * Barreira de qualidade antes de o item chegar à fila.
+ *
+ * A busca por relevância traz coisas que passam pelo filtro de estrelas mas não
+ * são material de estudo: repositórios abandonados, coleções de links pessoais,
+ * conteúdo adulto ou político que casou com o termo por acaso, e projetos sem
+ * descrição — que na interface aparecem como um título solto.
+ *
+ * Descartar aqui é mais barato do que a curadoria descartar item a item depois.
+ */
+function isWorthCataloguing(repo: GitHubRepo): boolean {
+  if (repo.archived) return false;
+
+  // Sem descrição não há o que mostrar no card nem o que classificar.
+  const descricao = repo.description?.trim() ?? "";
+  if (descricao.length < 20) return false;
+
+  const texto = `${repo.full_name} ${descricao}`.toLowerCase();
+
+  // Assuntos que não são educação em tecnologia e aparecem com frequência nas
+  // buscas por palavra solta.
+  const foraDoEscopo =
+    /\b(porn|nsfw|adult|xxx|onlyfans|casino|betting|apostas|crack|keygen|nulled|pirate|torrent|cheat|hack tool|bot(net)?|spam|carding|dictatorship|propaganda|政治|共产党)\b/;
+  if (foraDoEscopo.test(texto)) return false;
+
+  // Listas pessoais de links e dotfiles: úteis para o dono, não para quem chega
+  // procurando aprender.
+  const pessoal = /\b(my (notes|links|config|dotfiles|setup)|dotfiles|awesome-stars|starred)\b/;
+  if (pessoal.test(texto)) return false;
+
+  // Parado há mais de três anos costuma significar conteúdo desatualizado.
+  const tresAnos = Date.now() - 3 * 365 * 24 * 60 * 60 * 1000;
+  if (new Date(repo.pushed_at).getTime() < tresAnos) return false;
+
+  return true;
+}
 
 function request(url: URL, token: string | undefined) {
   const headers: Record<string, string> = {
@@ -97,11 +135,9 @@ function request(url: URL, token: string | undefined) {
 }
 
 function toResult(repo: GitHubRepo, topicSlug?: string): ProviderResult {
-  // Awesome lists são coletâneas; o resto tratamos como projeto de referência.
+  // Awesome lists são coletâneas; o tipo sai do nome e da descrição.
   const isAwesome = /awesome/i.test(repo.full_name);
-  const isExercise = /(exercis|challenge|katas|practice|100-days)/i.test(
-    repo.full_name + " " + (repo.description ?? ""),
-  );
+  const type = detectResourceType(repo.full_name, repo.description);
 
   const tags = [
     ...(repo.topics ?? []).slice(0, 4),
@@ -117,7 +153,7 @@ function toResult(repo: GitHubRepo, topicSlug?: string): ProviderResult {
     url: repo.html_url,
     source: "GitHub",
     sourceDomain: domainOf(repo.html_url),
-    type: isExercise ? "exercise" : "repository",
+    type,
     difficulty: detectDifficulty(repo.full_name, repo.description),
     language: detectLanguage(repo.description),
     thumbnailUrl: null,
@@ -199,14 +235,28 @@ export function educationalQueries(term: string): string[] {
  */
 export function deepEducationalQueries(term: string): string[] {
   return [
+    // Coletâneas e trilhas
     `awesome ${term}`,
+    `${term} roadmap`,
+    `${term} resources`,
+    // Ensino guiado — é daqui que saem os cursos, a categoria mais escassa
+    `${term} course`,
+    `${term} curriculum`,
+    `${term} bootcamp`,
     `${term} tutorial`,
+    `learn ${term}`,
+    // Leitura longa
+    `${term} book`,
+    `${term} handbook`,
+    `${term} guide`,
+    // Prática
     `${term} exercises`,
     `${term} examples`,
-    `learn ${term}`,
+    `${term} projects`,
+    `build ${term}`,
+    // Consulta e preparação
     `${term} cheatsheet`,
     `${term} interview questions`,
     `${term} best practices`,
-    `${term} roadmap`,
   ];
 }

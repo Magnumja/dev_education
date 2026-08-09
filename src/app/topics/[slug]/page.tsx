@@ -7,9 +7,13 @@ import { ButtonLink } from "@/components/ui/Button";
 import { search } from "@/lib/search";
 import { getTopicBySlug, getTopicsWithCounts } from "@/lib/search/resources";
 import { getCurrentUser, getSavedResourceSlugs } from "@/lib/auth/session";
+import { RESOURCE_TYPE_LABELS } from "@/constants";
 import type { ResourceType, SearchResult } from "@/types";
 
-type TopicPageProps = { params: Promise<{ slug: string }> };
+type TopicPageProps = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ type?: string }>;
+};
 
 // Mesma razão de /resource/[id]: conteúdo por sessão, sempre dinâmico.
 export const dynamic = "force-dynamic";
@@ -33,21 +37,33 @@ export async function generateMetadata({
 
 /** Ordem editorial das seções da página de tecnologia. */
 const SECTIONS: { title: string; types: ResourceType[] }[] = [
+  { title: "Cursos", types: ["course"] },
   { title: "Documentações", types: ["documentation"] },
-  { title: "Cursos e vídeos", types: ["course", "video"] },
-  { title: "Artigos e leituras", types: ["article", "pdf"] },
+  { title: "Vídeos", types: ["video"] },
+  { title: "Artigos e estudos", types: ["article"] },
+  { title: "Livros e PDFs", types: ["pdf"] },
   { title: "Exercícios", types: ["exercise"] },
-  { title: "Projetos e ferramentas", types: ["repository", "tool"] },
+  { title: "Projetos", types: ["repository"] },
+  { title: "Ferramentas", types: ["tool"] },
 ];
 
-export default async function TopicPage({ params }: TopicPageProps) {
+export default async function TopicPage({
+  params,
+  searchParams,
+}: TopicPageProps) {
   const { slug } = await params;
+  const { type: tipoAtivo } = await searchParams;
 
   const [topic, { results }, user, savedIds] = await Promise.all([
     getTopicBySlug(slug),
     // 40 em vez de 100: cada card custa ~4 KB entre HTML e payload, e ninguém
     // percorre cem itens numa página de tecnologia sem filtrar antes.
-    search({ topics: [slug] }, { limit: 40 }),
+    // 60 com filtro por tipo: sem ele, tecnologias grandes cortavam seções
+    // inteiras porque o teto era gasto pelos tipos mais numerosos.
+    search(
+      { topics: [slug], types: tipoAtivo ? [tipoAtivo as ResourceType] : [] },
+      { limit: 60 },
+    ),
     getCurrentUser(),
     getSavedResourceSlugs(),
   ]);
@@ -68,7 +84,16 @@ export default async function TopicPage({ params }: TopicPageProps) {
   }
 
   const listProps = { isAuthenticated: Boolean(user), savedIds };
-  const starters = results.filter((r) => r.difficulty === "beginner").slice(0, 3);
+
+  // Quantos há de cada tipo, para o filtro só oferecer o que existe.
+  const porTipo = new Map<ResourceType, number>();
+  for (const item of results) {
+    porTipo.set(item.type, (porTipo.get(item.type) ?? 0) + 1);
+  }
+
+  const starters = tipoAtivo
+    ? []
+    : results.filter((r) => r.difficulty === "beginner").slice(0, 3);
   const starterIds = new Set(starters.map((r) => r.id));
   const related = await relatedTopics(results, slug);
 
@@ -108,6 +133,40 @@ export default async function TopicPage({ params }: TopicPageProps) {
           </div>
         ) : null}
       </header>
+
+      {porTipo.size > 1 && !tipoAtivo ? (
+        <nav aria-label="Filtrar por tipo" className="mt-6 flex flex-wrap gap-2">
+          {[...porTipo.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([tipo, quantos]) => (
+              <Link
+                key={tipo}
+                href={`/topics/${slug}?type=${tipo}`}
+                className="rounded-full border border-line px-3 py-1 text-[13px] text-ink-700 transition-quick hover:border-brand-400 hover:text-brand-500"
+              >
+                {RESOURCE_TYPE_LABELS[tipo]}
+                <span className="ml-1.5 text-ink-400">{quantos}</span>
+              </Link>
+            ))}
+        </nav>
+      ) : null}
+
+      {tipoAtivo ? (
+        <div className="mt-6 flex items-center gap-3">
+          <p className="text-sm text-ink-500">
+            Mostrando apenas{" "}
+            <strong className="font-semibold text-navy-900">
+              {RESOURCE_TYPE_LABELS[tipoAtivo as ResourceType]}
+            </strong>
+          </p>
+          <Link
+            href={`/topics/${slug}`}
+            className="text-xs font-medium text-brand-500 transition-quick hover:text-brand-400"
+          >
+            Ver tudo
+          </Link>
+        </div>
+      ) : null}
 
       {starters.length > 0 ? (
         <section className="mt-10">

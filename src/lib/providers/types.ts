@@ -110,6 +110,62 @@ export function detectDifficulty(
   return null;
 }
 
+/**
+ * Deduz o tipo do conteúdo pelo nome e pela descrição.
+ *
+ * O provider do GitHub classificava tudo como repositório ou exercício, e o
+ * catálogo terminou com 1.367 repositórios contra 4 cursos — quando boa parte
+ * daqueles repositórios é currículo, livro ou ferramenta. Quem filtra por
+ * "Curso" não encontrava nada, embora o material estivesse lá.
+ *
+ * A ordem das verificações é a precedência: um "curso com exercícios" é curso,
+ * e um "livro sobre Docker" é livro antes de ser repositório.
+ */
+export function detectResourceType(
+  ...parts: (string | null | undefined)[]
+): "course" | "pdf" | "exercise" | "tool" | "documentation" | "repository" {
+  const text = parts
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (
+    /\b(course|courses|curso|cursos|curriculum|curriculo|bootcamp|masterclass|classes|aulas|treinamento|training|especializacao|nanodegree|zero to (hero|mastery))\b/.test(
+      text,
+    )
+  ) {
+    return "course";
+  }
+
+  if (/\b(book|books|livro|ebook|handbook|manual|apostila|the little)\b/.test(text)) {
+    return "pdf";
+  }
+
+  if (
+    /\b(exercise|exercises|exercicios|challenge|challenges|desafios|katas|koans|practice|praticar|playground|100-days|30-days|quiz)\b/.test(
+      text,
+    )
+  ) {
+    return "exercise";
+  }
+
+  if (
+    /\b(cli|tool|tools|toolkit|generator|starter|template|boilerplate|scaffold|extension|plugin|linter|formatter|devtools)\b/.test(
+      text,
+    )
+  ) {
+    return "tool";
+  }
+
+  if (/\b(docs|documentation|documentacao|reference|referencia|api docs|spec)\b/.test(text)) {
+    return "documentation";
+  }
+
+  return "repository";
+}
+
 export function domainOf(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");

@@ -17,6 +17,9 @@ import { getResourceBySlug } from "@/lib/search/resources";
 import { getTopicsWithCounts } from "@/lib/search/resources";
 import { search } from "@/lib/search";
 import { getCurrentUser, getSavedResourceSlugs } from "@/lib/auth/session";
+import { getRatingSummary } from "@/lib/ratings/queries";
+import { RatingStars } from "@/components/resources/RatingStars";
+import { RatingSummary } from "@/components/resources/RatingSummary";
 import { cn } from "@/lib/utils/cn";
 
 type ResourcePageProps = { params: Promise<{ id: string }> };
@@ -53,9 +56,10 @@ export default async function ResourcePage({ params }: ResourcePageProps) {
 
   if (!resource) notFound();
 
-  const [allTopics, relatedSearch] = await Promise.all([
+  const [allTopics, relatedSearch, ratings] = await Promise.all([
     getTopicsWithCounts(),
     search({ topics: resource.topics }, { limit: 5 }),
+    getRatingSummary(resource.id),
   ]);
 
   const topics = allTopics
@@ -76,6 +80,12 @@ export default async function ResourcePage({ params }: ResourcePageProps) {
           </span>
           <span aria-hidden>·</span>
           <span>{resource.source}</span>
+          {ratings.count > 0 ? (
+            <>
+              <span aria-hidden>·</span>
+              <RatingSummary average={ratings.average} count={ratings.count} />
+            </>
+          ) : null}
         </div>
 
         <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-navy-900 sm:text-3xl">
@@ -114,6 +124,26 @@ export default async function ResourcePage({ params }: ResourcePageProps) {
             className="border border-line"
           />
         </div>
+
+        <section className="mt-7 rounded-card border border-line bg-surface-muted px-4 py-3.5">
+          <h2 className="text-sm font-medium text-navy-900">
+            {ratings.count > 0
+              ? "O que a comunidade achou"
+              : "Já usou este conteúdo?"}
+          </h2>
+          <p className="mt-1 text-xs leading-relaxed text-ink-500">
+            {ratings.count > 0
+              ? "Sua nota ajuda a ordenar os resultados para quem vier depois."
+              : "Seja a primeira pessoa a avaliar — a nota entra no ranking da busca."}
+          </p>
+          <div className="mt-3">
+            <RatingStars
+              slug={resource.id}
+              mine={ratings.mine}
+              isAuthenticated={Boolean(user)}
+            />
+          </div>
+        </section>
 
         <dl className="mt-8 divide-y divide-line border-y border-line text-sm">
           <Row label="Fonte">

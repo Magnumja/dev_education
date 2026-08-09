@@ -232,3 +232,39 @@ export const TOPICS: Topic[] = [
 ];
 
 export const TOPIC_BY_SLUG = new Map(TOPICS.map((topic) => [topic.slug, topic]));
+
+/**
+ * Agrupamento das tecnologias para a página de navegação.
+ *
+ * Com 12 tecnologias, uma grade única funcionava. Com 28, ela vira uma parede
+ * de cartões onde nada se destaca — quem chega procurando back-end precisa ler
+ * todos para achar três. Os grupos seguem a divisão que um desenvolvedor já
+ * tem na cabeça, não a ordem alfabética.
+ */
+export const TOPIC_GROUPS: { title: string; hint: string; slugs: string[] }[] = [
+  {
+    title: "Linguagens",
+    hint: "A base de tudo. Comece por uma e o resto fica mais fácil.",
+    slugs: ["javascript", "typescript", "python", "go", "rust", "php", "ruby", "java"],
+  },
+  {
+    title: "Front-end",
+    hint: "O que a pessoa vê e usa no navegador.",
+    slugs: ["html", "css", "react", "nextjs", "vue", "angular", "svelte", "tailwind"],
+  },
+  {
+    title: "Back-end e dados",
+    hint: "Servidores, APIs e onde a informação fica guardada.",
+    slugs: ["nodejs", "sql", "graphql"],
+  },
+  {
+    title: "Infraestrutura",
+    hint: "Como o software chega e se mantém no ar.",
+    slugs: ["docker", "devops", "linux", "git", "security"],
+  },
+  {
+    title: "Especializações",
+    hint: "Caminhos para depois dos fundamentos.",
+    slugs: ["ai", "mobile", "testing", "career"],
+  },
+];

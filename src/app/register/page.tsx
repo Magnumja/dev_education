@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { AuthMessage } from "@/components/auth/AuthMessage";
 import { signUp } from "@/lib/auth/actions";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -14,13 +15,13 @@ export const metadata: Metadata = {
 };
 
 type RegisterPageProps = {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 };
 
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
   if (await getCurrentUser()) redirect("/");
 
-  const { next = "/" } = await searchParams;
+  const { next = "/", error } = await searchParams;
   const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
 
   return (
@@ -40,6 +41,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         </>
       }
     >
+      <AuthMessage error={error} />
       <AuthForm mode="signup" action={signUp} next={safeNext} />
     </AuthLayout>
   );

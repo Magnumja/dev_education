@@ -13,7 +13,8 @@
     "ingest": "NODE_OPTIONS=--conditions=react-server tsx scripts/ingest.ts",
     "check:github": "tsx scripts/check-github-token.ts",
     "classify": "NODE_OPTIONS=--conditions=react-server tsx scripts/classify.ts",
-    "publish": "NODE_OPTIONS=--conditions=react-server tsx scripts/publish.ts"
+    "publish": "NODE_OPTIONS=--conditions=react-server tsx scripts/publish.ts",
+    "retype": "NODE_OPTIONS=--conditions=react-server tsx scripts/retype.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

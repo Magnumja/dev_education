@@ -9,6 +9,10 @@ import {
 /** Rotas que exigem sessão; o restante do site é público. */
 const PROTECTED = ["/favorites", "/collections", "/profile", "/submit", "/admin"];
 
+// /nova-senha e /recuperar-senha ficam fora: a primeira chega pelo link do
+// e-mail, com sessão temporária, e a segunda é justamente para quem não
+// consegue entrar.
+
 export async function proxy(request: NextRequest) {
   if (!isSupabaseConfigured) return NextResponse.next();
 

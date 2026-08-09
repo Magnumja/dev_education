@@ -119,3 +119,68 @@ export async function signOut(): Promise<void> {
   revalidatePath("/", "layout");
   redirect("/");
 }
+
+/**
+ * Envia o link de recuperação de senha.
+ *
+ * A resposta é sempre a mesma, exista a conta ou não. Diferenciar permitiria
+ * descobrir quais e-mails estão cadastrados testando um a um.
+ */
+export async function requestPasswordReset(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  if (!isSupabaseConfigured) {
+    return { error: "Recuperação indisponível: Supabase não configurado." };
+  }
+
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Informe o e-mail da sua conta." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${await origin()}/auth/callback?next=/nova-senha`,
+  });
+
+  if (error) console.error("Falha ao enviar recuperação:", error);
+
+  return {
+    message:
+      "Se existir uma conta com esse e-mail, o link de recuperação já está a caminho. Confira também o spam.",
+  };
+}
+
+/** Grava a nova senha. Exige a sessão criada pelo link do e-mail. */
+export async function updatePassword(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const senha = String(formData.get("password") ?? "");
+  const confirmacao = String(formData.get("password_confirm") ?? "");
+
+  if (senha.length < 8) {
+    return { error: "A senha precisa ter pelo menos 8 caracteres." };
+  }
+  if (senha !== confirmacao) {
+    return { error: "As duas senhas não coincidem." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      error:
+        "O link expirou ou já foi usado. Peça um novo em “Esqueci minha senha”.",
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: senha });
+  if (error) return { error: error.message };
+
+  await supabase.auth.signOut();
+  revalidatePath("/", "layout");
+  redirect("/login?ok=senha_alterada");
+}
