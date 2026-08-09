@@ -1,6 +1,8 @@
 import "server-only";
 
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
+import { createPublicClient } from "@/lib/supabase/public";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { RESOURCE_BY_ID } from "@/lib/data/resources";
@@ -55,12 +57,12 @@ export const getResourceBySlug = cache(
 );
 
 /** Lista de tecnologias com a contagem de conteúdos ativos de cada uma. */
-export const getTopicsWithCounts = cache(
+const loadTopicsWithCounts = unstable_cache(
   async (): Promise<{ topic: Topic; count: number }[]> => {
     if (!isSupabaseConfigured) return countFromCatalog();
 
     try {
-      const supabase = await createClient();
+      const supabase = createPublicClient();
       const { data, error } = await supabase
         .from("topics")
         .select("id, name, slug, description, icon, resource_topics(count)")
@@ -86,7 +88,13 @@ export const getTopicsWithCounts = cache(
       return countFromCatalog();
     }
   },
+  ["topics-with-counts"],
+  // As contagens mudam quando a curadoria publica algo, e a revalidação por
+  // caminho no painel já limpa este cache; a janela é só a rede de segurança.
+  { revalidate: 300, tags: ["catalog"] },
 );
+
+export const getTopicsWithCounts = cache(loadTopicsWithCounts);
 
 export const getTopicBySlug = cache(async (slug: string): Promise<Topic | null> => {
   const topics = await getTopicsWithCounts();

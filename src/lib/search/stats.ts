@@ -1,6 +1,8 @@
 import "server-only";
 
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
+import { createPublicClient } from "@/lib/supabase/public";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { RESOURCES } from "@/lib/data/resources";
@@ -31,7 +33,8 @@ export interface SourceStat {
 }
 
 /** Contagem real por tipo de conteúdo — nada é estimado. */
-export const getSourceStats = cache(async (): Promise<SourceStat[]> => {
+const loadSourceStats = unstable_cache(
+  async (): Promise<SourceStat[]> => {
   const counts = await countByType();
 
   return SOURCE_GROUPS.map((group) => ({
@@ -41,7 +44,12 @@ export const getSourceStats = cache(async (): Promise<SourceStat[]> => {
     href: `/search?${group.types.map((type) => `type=${type}`).join("&")}`,
     icon: group.types[0],
   }));
-});
+  },
+  ["source-stats"],
+  { revalidate: 300, tags: ["catalog"] },
+);
+
+export const getSourceStats = cache(loadSourceStats);
 
 async function countByType(): Promise<Partial<Record<ResourceType, number>>> {
   const fromCatalog = () => {
@@ -55,7 +63,7 @@ async function countByType(): Promise<Partial<Record<ResourceType, number>>> {
   if (!isSupabaseConfigured) return fromCatalog();
 
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     // Agregado no banco: trazer uma linha por recurso não escala.
     const { data, error } = await supabase.rpc("resource_type_counts");
 

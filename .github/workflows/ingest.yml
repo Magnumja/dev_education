@@ -1,0 +1,95 @@
+name: Ingestão de conteúdo
+
+# Roda os mesmos scripts do desenvolvimento, sem alteração nenhuma.
+#
+# Existe porque a rota /api/ingest tem 60 segundos de teto na Vercel e a
+# ingestão completa leva cerca de 11 minutos — 252 buscas no GitHub, mais
+# DEV.to, Hacker News, Stack Overflow, YouTube e DevDocs. Para caber naquele
+# limite, a rota precisou ser fatiada em três tecnologias por execução; aqui a
+# passagem é inteira.
+#
+# O outro motivo é a chave: SUPABASE_SERVICE_ROLE_KEY ignora toda a RLS, e
+# rodar os scripts na máquina de alguém significa mantê-la lá. Nos Secrets do
+# repositório ela fica fora de qualquer notebook.
+
+on:
+  schedule:
+    # 06:00 UTC = 03:00 em Brasília, fora do horário de uso.
+    - cron: "0 6 * * *"
+  # Permite disparar pelo botão "Run workflow", sem esperar o agendamento.
+  workflow_dispatch:
+    inputs:
+      etapa:
+        description: "O que buscar"
+        type: choice
+        default: all
+        options: [all, github, artigos, hn, so, youtube, docs]
+      publicar:
+        description: "Publicar automaticamente o que tiver tecnologia vinculada"
+        type: boolean
+        default: false
+
+concurrency:
+  # Duas execuções simultâneas gravariam as mesmas descobertas em paralelo.
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    # Folga sobre os ~11 minutos da passagem completa, sem deixar um travamento
+    # consumir horas de execução.
+    timeout-minutes: 45
+
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GITHUB_TOKEN_DEVEDU: ${{ secrets.GITHUB_TOKEN_DEVEDU }}
+      YOUTUBE_CHANNELS: ${{ secrets.YOUTUBE_CHANNELS }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Montar .env.local
+        # Os scripts leem o arquivo com process.loadEnvFile, o mesmo caminho do
+        # desenvolvimento — assim não há um segundo jeito de carregar segredos.
+        #
+        # GITHUB_TOKEN é reservado pelo Actions e vem com permissões do repo, o
+        # que não serve aqui: por isso o secret tem outro nome e é renomeado.
+        run: |
+          cat > .env.local <<EOF
+          NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+          SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+          GITHUB_TOKEN=${GITHUB_TOKEN_DEVEDU}
+          YOUTUBE_CHANNELS=${YOUTUBE_CHANNELS}
+          EOF
+
+      - name: Buscar conteúdo
+        run: npm run ingest -- ${{ inputs.etapa || 'all' }}
+
+      - name: Vincular tecnologias
+        run: npm run classify
+
+      - name: Publicar o que tem tecnologia
+        # Desligado por padrão: descoberta automática entrando publicada sem
+        # revisão contraria o princípio de curadoria do projeto.
+        if: ${{ inputs.publicar == true }}
+        run: |
+          npm run publish -- devdocs
+          npm run publish -- devto
+          npm run publish -- hackernews
+          npm run publish -- stackoverflow
+          npm run publish -- github
+
+      - name: Remover credenciais
+        if: always()
+        run: rm -f .env.local
