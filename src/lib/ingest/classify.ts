@@ -30,8 +30,36 @@ const TOPIC_KEYWORDS: Record<string, RegExp> = {
   // como esses vídeos são de fato titulados.
   ai: /\b(ias?|a\.i|inteligência artificial|machine learning|deep learning|llms?|chatgpt|openai|claude|gemini|copilot|cursor|prompts?|agents?|agentes?|rag|redes? neura|neural networks?|mcp)\b/i,
   devops:
-    /\b(devops|kubernetes|k8s|ci\/cd|aws|azure|cloud|terraform|linux|nginx|deploys?|infraestrutura|observabilidade|servidor|self-?host)\b/i,
+    /\b(devops|kubernetes|k8s|kubectl|ci\/cd|aws|azure|cloud|terraform|opentofu|nginx|haproxy|varnish|ansible|chef|saltstack|vagrant|deploys?|infraestrutura|observabilidade|self-?host)\b/i,
+  html: /\b(html|html5|sem[âa]ntic|acessibilidade|a11y|svg|web apis?|dom|formul[áa]rios?)\b/i,
+  vue: /\b(vue|vuejs|vuex|nuxt|pinia|vue router|vueuse)\b/i,
+  angular: /\b(angular|angularjs|rxjs|ngrx)\b/i,
+  svelte: /\b(svelte|sveltekit)\b/i,
+  tailwind: /\b(tailwind|tailwindcss|utility.first)\b/i,
+  go: /\b(golang|go lang|goroutines?)\b/i,
+  rust: /\b(rust|cargo|rustlings|tokio)\b/i,
+  php: /\b(php|laravel|symfony|wordpress|composer|drupal|codeigniter|cakephp|yii|phpunit)\b/i,
+  ruby: /\b(ruby|rails|ruby on rails|sinatra|minitest|jekyll)\b/i,
+  java: /\b(java|jvm|kotlin|spring|spring boot|maven|gradle|openjdk|scala|groovy|clojure)\b/i,
+  mobile: /\b(mobile|android|ios|flutter|dart|swift|react native|expo|cordova|ionic|app nativo)\b/i,
+  testing:
+    /\b(testes?|testing|tdd|jest|vitest|playwright|cypress|mocha|chai|jasmine|qunit|phpunit|pytest|unit tests?|e2e)\b/i,
+  graphql:
+    /\b(graphql|apollo|rest api|restful|apis?|swagger|openapi|grpc|trpc|websockets?|webhooks?|relay)\b/i,
+  security:
+    /\b(seguran[çc]a|security|autentica[çc][ãa]o|authentication|oauth|jwt|criptografia|encryption|vulnerabilidade|hackers?|hackear|pentest|xss|csrf|owasp|senhas?|passwords?|firewall|vpn|malware)\b/i,
+  linux:
+    /\b(linux|bash|shell|zsh|fish|terminal|ubuntu|debian|comandos?|command line|cli|nix|homebrew|powershell)\b/i,
+  career:
+    /\b(carreira|career|entrevistas?|interviews?|curr[íi]culo|portf[óo]lio|primeiro emprego|salário|freelanc|senior|júnior|junior|pleno|vagas?|mercado de trabalho|soft skills?|produtividade)\b/i,
 };
+
+interface RawResource {
+  id: string;
+  title: string;
+  description: string | null;
+  resource_topics: { topic_id: string }[];
+}
 
 export interface ClassifyReport {
   scanned: number;
@@ -51,30 +79,36 @@ export async function classifyUnlinked(
 ): Promise<ClassifyReport> {
   const supabase = createAdminClient();
 
-  let query = supabase
-    .from("resources")
-    .select("id, title, description, resource_topics (topic_id)")
-    .limit(options.limit ?? 2000);
+  // O PostgREST devolve no máximo 1000 linhas por requisição. Sem paginar, a
+  // classificação varria só o começo da tabela e parecia não achar nada.
+  const resources: RawResource[] = [];
+  const pageSize = 1000;
 
-  if (options.onlyProvider) query = query.eq("provider", options.onlyProvider);
+  for (let offset = 0; ; offset += pageSize) {
+    let page = supabase
+      .from("resources")
+      .select("id, title, description, resource_topics (topic_id)")
+      .range(offset, offset + pageSize - 1);
 
-  const [{ data: resources, error }, { data: topics }] = await Promise.all([
-    query,
-    supabase.from("topics").select("id, slug"),
-  ]);
+    if (options.onlyProvider) page = page.eq("provider", options.onlyProvider);
 
-  if (error) throw new Error(error.message);
+    const { data, error } = await page;
+    if (error) throw new Error(error.message);
+
+    const batch = (data ?? []) as unknown as RawResource[];
+    resources.push(...batch);
+
+    if (batch.length < pageSize) break;
+    if (options.limit && resources.length >= options.limit) break;
+  }
+
+  const { data: topics } = await supabase.from("topics").select("id, slug");
 
   const topicId = new Map(
     ((topics ?? []) as { id: string; slug: string }[]).map((t) => [t.slug, t.id]),
   );
 
-  const rows = (resources ?? []) as unknown as {
-    id: string;
-    title: string;
-    description: string | null;
-    resource_topics: { topic_id: string }[];
-  }[];
+  const rows = resources;
 
   const links: { resource_id: string; topic_id: string }[] = [];
   const examples: string[] = [];
