@@ -155,6 +155,22 @@ const SEARCH_TERMS: Record<string, string> = {
   sql: "SQL",
   ai: "machine learning",
   devops: "DevOps",
+  html: "HTML",
+  vue: "Vue",
+  angular: "Angular",
+  svelte: "Svelte",
+  tailwind: "Tailwind CSS",
+  go: "Golang",
+  rust: "Rust",
+  php: "PHP",
+  ruby: "Ruby",
+  java: "Java",
+  mobile: "React Native",
+  testing: "testing",
+  graphql: "GraphQL",
+  security: "security",
+  linux: "Linux",
+  career: "developer career",
 };
 
 export function searchTermFor(topicSlug: string, fallback: string): string {

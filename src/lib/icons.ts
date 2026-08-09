@@ -19,6 +19,20 @@ const TOPIC_ICONS: Record<string, string> = {
   git: "git",
   sql: "postgresql",
   devops: "kubernetes",
+  html: "html5",
+  vue: "vuedotjs",
+  angular: "angular",
+  svelte: "svelte",
+  tailwind: "tailwindcss",
+  go: "go",
+  rust: "rust",
+  php: "php",
+  ruby: "ruby",
+  java: "kotlin",
+  mobile: "dart",
+  testing: "jest",
+  graphql: "graphql",
+  linux: "linux",
   // "Inteligência Artificial" não tem marca própria: cai no monograma.
 };
 
