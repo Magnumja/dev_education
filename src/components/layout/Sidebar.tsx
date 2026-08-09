@@ -62,24 +62,28 @@ export function Sidebar({
     <div className="flex h-full flex-col bg-rail">
       <Link
         href="/"
-        className="flex items-center gap-2.5 px-5 py-6"
+        className="block px-4 pb-5 pt-7"
         aria-label={`${SITE.name} — página inicial`}
       >
+        {/* Recorte de deveduclogo.png, com o texto em branco: assenta direto
+            sobre o azul-marinho, sem faixa atrás.
+
+            O nome do arquivo mudou junto com a arte de propósito. O otimizador
+            de imagens do Next e o cache do navegador guardam por URL: manter o
+            mesmo nome faria a versão antiga continuar sendo servida. */}
+        {/* 55% da largura: o desenho preenche 94% da arte, então a marca
+            visível fica com ~116px numa barra de 256 — folga de 70px de cada
+            lado, sem competir com os itens de navegação abaixo. */}
         <Image
-          src="/images/deveducation-icon.png"
-          alt=""
-          width={34}
-          height={34}
+          src="/images/deveducation-wordmark.png"
+          alt={SITE.name}
+          width={640}
+          height={160}
           priority
-          className="shrink-0"
+          className="mx-auto h-auto w-[55%]"
         />
-        <span className="leading-none">
-          <span className="block text-[17px] font-semibold tracking-tight text-rail-text-strong">
-            Dev<span className="text-brand-400">Education</span>
-          </span>
-          <span className="mt-1 block text-[10.5px] font-medium text-rail-text">
-            {SITE.tagline}
-          </span>
+        <span className="mt-1 block px-1 text-center text-[11px] font-medium leading-none text-rail-text">
+          {SITE.tagline}
         </span>
       </Link>
 
