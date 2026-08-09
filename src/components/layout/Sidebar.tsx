@@ -62,23 +62,20 @@ export function Sidebar({
     <div className="flex h-full flex-col bg-rail">
       <Link
         href="/"
-        className="block px-4 py-5"
+        className="block px-4 pb-4 pt-6"
         aria-label={`${SITE.name} — página inicial`}
       >
-        {/* A logo tem o texto em azul-marinho (#000c26), praticamente a mesma
-            cor do fundo da barra. Sem uma faixa clara atrás, a marca
-            desapareceria — daí o painel branco em vez da imagem solta. */}
-        <span className="block rounded-xl bg-white px-3.5 py-3 shadow-soft">
-          <Image
-            src="/images/deveducation-logo-mark.png"
-            alt={SITE.name}
-            width={640}
-            height={146}
-            priority
-            className="h-auto w-full"
-          />
-        </span>
-        <span className="mt-2.5 block px-1 text-center text-[11px] font-medium leading-none text-rail-text">
+        {/* Versão de texto branco, recortada de deveduclogo.png: dispensa
+            qualquer faixa atrás e assenta direto sobre o azul-marinho. */}
+        <Image
+          src="/images/deveducation-logo-mark.png"
+          alt={SITE.name}
+          width={640}
+          height={160}
+          priority
+          className="h-auto w-full"
+        />
+        <span className="mt-1 block px-1 text-center text-[11px] font-medium leading-none text-rail-text">
           {SITE.tagline}
         </span>
       </Link>
