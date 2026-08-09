@@ -3,12 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { requireCurator } from "@/lib/admin/guard";
 import { createClient } from "@/lib/supabase/server";
+import { PUBLISH_BATCH_LIMIT } from "@/lib/admin/queue";
 import {
   ingestDevDocs,
   ingestGitHub,
   ingestYouTubeChannel,
 } from "@/lib/ingest/run";
-import { resolveChannelId } from "@/lib/providers/youtube";
 
 export interface DiscoverState {
   error?: string;
@@ -42,11 +42,7 @@ export async function runDiscovery(
         : provider === "devdocs"
           ? await ingestDevDocs(query, topicSlug, 10)
           : provider === "youtube"
-            ? await ingestYouTubeChannel(
-                await resolveChannelId(query),
-                topicSlug,
-                10,
-              )
+            ? await ingestYouTubeChannel(query, topicSlug, 10)
             : null;
   } catch (error) {
     // Erro ao resolver o canal: a mensagem já é orientada ao usuário.
@@ -91,6 +87,52 @@ export async function publishDiscovery(formData: FormData): Promise<void> {
     .from("resources")
     .update({ is_active: true, is_verified: true })
     .eq("id", id);
+
+  revalidatePath("/admin/discover");
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Publica de uma vez tudo que corresponde ao filtro aberto na tela.
+ *
+ * Os critérios são reenviados e reaplicados no servidor, em vez de receber uma
+ * lista de identificadores do cliente: assim a ação não pode ser usada para
+ * publicar itens que a pessoa não estava vendo.
+ *
+ * Existe um teto por chamada — publicar centenas de itens sem olhar seria o
+ * oposto de curadoria, e um clique acidental não pode encher o catálogo.
+ */
+export async function publishFiltered(formData: FormData): Promise<void> {
+  await requireCurator();
+
+  const provider = String(formData.get("provider") ?? "").trim();
+  const type = String(formData.get("type") ?? "").trim();
+  const language = String(formData.get("lang") ?? "").trim();
+
+  // Sem nenhum filtro, a ação publicaria a fila inteira sem revisão.
+  if (!provider && !type && !language) return;
+
+  const supabase = await createClient();
+
+  let selection = supabase
+    .from("resources")
+    .select("id")
+    .eq("is_active", false)
+    .not("provider", "is", null);
+
+  if (provider) selection = selection.eq("provider", provider);
+  if (type) selection = selection.eq("resource_type", type);
+  if (language) selection = selection.eq("language", language);
+
+  const { data } = await selection.limit(PUBLISH_BATCH_LIMIT);
+  const ids = ((data ?? []) as { id: string }[]).map((row) => row.id);
+
+  if (ids.length === 0) return;
+
+  await supabase
+    .from("resources")
+    .update({ is_active: true, is_verified: true })
+    .in("id", ids);
 
   revalidatePath("/admin/discover");
   revalidatePath("/", "layout");

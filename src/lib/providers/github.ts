@@ -172,3 +172,25 @@ export function searchTermFor(topicSlug: string, fallback: string): string {
 export function educationalQueries(term: string): string[] {
   return [`awesome ${term}`, `${term} tutorial`, `${term} exercises`];
 }
+
+/**
+ * Conjunto ampliado, para a ingestão em lote.
+ *
+ * Cada padrão pega um tipo diferente de material — coletânea, passo a passo,
+ * prática, projeto para copiar, consulta rápida, preparação para entrevista.
+ * Buscar seis vezes com intenções distintas cobre muito mais do que buscar
+ * seis vezes o mesmo termo.
+ */
+export function deepEducationalQueries(term: string): string[] {
+  return [
+    `awesome ${term}`,
+    `${term} tutorial`,
+    `${term} exercises`,
+    `${term} examples`,
+    `learn ${term}`,
+    `${term} cheatsheet`,
+    `${term} interview questions`,
+    `${term} best practices`,
+    `${term} roadmap`,
+  ];
+}

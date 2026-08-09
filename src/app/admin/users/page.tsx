@@ -6,26 +6,26 @@ import { listUsers } from "@/lib/admin/users";
 import { getCurrentUser } from "@/lib/auth/session";
 import { formatRelativeTime } from "@/lib/utils/format";
 
-const ROLE_LABELS = {
-  user: "Usuário",
-  curator: "Curador",
-  admin: "Administrador",
-} as const;
-
 export default async function AdminUsersPage() {
-  const [users, current] = await Promise.all([listUsers(), getCurrentUser()]);
+  const current = await getCurrentUser();
   const isAdmin = current?.profile?.role === "admin";
+
+  // E-mail é dado pessoal e não faz parte do trabalho de curadoria. Só quem
+  // administra permissões precisa da lista — e só para ela ela é carregada.
+  if (!isAdmin) {
+    return (
+      <p className="max-w-3xl rounded-card border border-line bg-surface-muted px-4 py-3.5 text-sm text-ink-700">
+        Esta área é dos administradores. Curadores revisam e publicam conteúdo,
+        mas não gerenciam contas nem enxergam e-mails.
+      </p>
+    );
+  }
+
+  const users = await listUsers();
 
   return (
     <div className="max-w-3xl space-y-8">
-      {isAdmin ? (
-        <GrantRoleForm />
-      ) : (
-        <p className="rounded-card border border-line bg-surface-muted px-4 py-3.5 text-sm text-ink-700">
-          Curadores podem ver as contas, mas só administradores alteram
-          permissões.
-        </p>
-      )}
+      <GrantRoleForm />
 
       <section>
         <h2 className="text-[15px] font-semibold text-navy-900">
@@ -70,13 +70,7 @@ export default async function AdminUsersPage() {
                 </p>
               </div>
 
-              {isAdmin ? (
-                <RoleSelect userId={user.id} role={user.role} />
-              ) : (
-                <Badge variant={user.role === "user" ? "neutral" : "brand"}>
-                  {ROLE_LABELS[user.role]}
-                </Badge>
-              )}
+              <RoleSelect userId={user.id} role={user.role} />
             </li>
           ))}
         </ul>

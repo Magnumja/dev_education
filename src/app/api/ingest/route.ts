@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { TOPICS } from "@/lib/data/topics";
 import {
@@ -6,7 +7,6 @@ import {
   ingestYouTubeChannel,
   type IngestReport,
 } from "@/lib/ingest/run";
-import { resolveChannelId } from "@/lib/providers/youtube";
 import { educationalQueries, searchTermFor } from "@/lib/providers/github";
 
 export const maxDuration = 60;
@@ -60,8 +60,8 @@ async function handle(request: NextRequest) {
     );
   }
 
-  const header = request.headers.get("authorization");
-  if (!accepted.some((secret) => header === `Bearer ${secret}`)) {
+  const header = request.headers.get("authorization") ?? "";
+  if (!accepted.some((secret) => safeEqual(header, `Bearer ${secret}`))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -124,6 +124,23 @@ async function handle(request: NextRequest) {
   });
 }
 
+/**
+ * Comparação em tempo constante.
+ *
+ * `===` para em cada byte divergente, e o tempo de resposta revela quantos
+ * caracteres do segredo já estão certos — dá para descobri-lo byte a byte.
+ */
+function safeEqual(a: string, b: string): boolean {
+  const bufferA = Buffer.from(a);
+  const bufferB = Buffer.from(b);
+
+  // timingSafeEqual exige mesmo tamanho; comparar o comprimento antes só
+  // revela o tamanho do segredo, que não é o segredo.
+  if (bufferA.length !== bufferB.length) return false;
+
+  return timingSafeEqual(bufferA, bufferB);
+}
+
 function channelList(): string[] {
   return (process.env.YOUTUBE_CHANNELS ?? "")
     .split(",")
@@ -133,7 +150,7 @@ function channelList(): string[] {
 
 async function ingestChannel(entry: string): Promise<IngestReport> {
   try {
-    return await ingestYouTubeChannel(await resolveChannelId(entry), undefined, 10);
+    return await ingestYouTubeChannel(entry, undefined, 10);
   } catch (error) {
     return {
       provider: "YouTube",

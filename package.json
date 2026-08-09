@@ -9,7 +9,11 @@
     "lint": "eslint",
     "db:seed": "tsx scripts/generate-seed.ts",
     "icons": "tsx scripts/generate-icons.ts",
-    "test": "tsx --test 'src/**/*.test.ts'"
+    "test": "tsx --test 'src/**/*.test.ts'",
+    "ingest": "NODE_OPTIONS=--conditions=react-server tsx scripts/ingest.ts",
+    "check:github": "tsx scripts/check-github-token.ts",
+    "classify": "NODE_OPTIONS=--conditions=react-server tsx scripts/classify.ts",
+    "publish": "NODE_OPTIONS=--conditions=react-server tsx scripts/publish.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
@@ -19,6 +23,7 @@
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
