@@ -62,24 +62,24 @@ export function Sidebar({
     <div className="flex h-full flex-col bg-rail">
       <Link
         href="/"
-        className="flex items-center gap-2.5 px-5 py-6"
+        className="block px-4 py-5"
         aria-label={`${SITE.name} — página inicial`}
       >
-        <Image
-          src="/images/deveducation-icon.png"
-          alt=""
-          width={34}
-          height={34}
-          priority
-          className="shrink-0"
-        />
-        <span className="leading-none">
-          <span className="block text-[17px] font-semibold tracking-tight text-rail-text-strong">
-            Dev<span className="text-brand-400">Education</span>
-          </span>
-          <span className="mt-1 block text-[10.5px] font-medium text-rail-text">
-            {SITE.tagline}
-          </span>
+        {/* A logo tem o texto em azul-marinho (#000c26), praticamente a mesma
+            cor do fundo da barra. Sem uma faixa clara atrás, a marca
+            desapareceria — daí o painel branco em vez da imagem solta. */}
+        <span className="block rounded-xl bg-white px-3.5 py-3 shadow-soft">
+          <Image
+            src="/images/deveducation-logo-mark.png"
+            alt={SITE.name}
+            width={640}
+            height={146}
+            priority
+            className="h-auto w-full"
+          />
+        </span>
+        <span className="mt-2.5 block px-1 text-center text-[11px] font-medium leading-none text-rail-text">
+          {SITE.tagline}
         </span>
       </Link>
 
