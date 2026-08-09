@@ -11,7 +11,7 @@ import {
   RESOURCE_TYPE_LABELS,
 } from "@/constants";
 import { cn } from "@/lib/utils/cn";
-import { BrandIcon } from "@/components/icons/BrandIcon";
+import { BrandIconRef } from "@/components/icons/BrandIconSprite";
 import { resourceIcon } from "@/lib/icons";
 import { isAllowedImageHost } from "@/lib/image-hosts";
 import type { SearchResult } from "@/types";
@@ -61,10 +61,9 @@ export function ResourceCard({
             {RESOURCE_TYPE_LABELS[resource.type]}
           </span>
           <span aria-hidden>·</span>
-          <BrandIcon
+          <BrandIconRef
             slug={resourceIcon(resource.sourceDomain, resource.topics)}
-            colored
-            className="size-3.5"
+            className="size-3.5 shrink-0"
           />
           <span className="truncate">{resource.sourceDomain}</span>
           {resource.isVerified ? (

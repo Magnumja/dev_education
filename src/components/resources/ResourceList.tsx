@@ -1,4 +1,6 @@
 import { ResourceCard } from "@/components/resources/ResourceCard";
+import { BrandIconSprite } from "@/components/icons/BrandIconSprite";
+import { resourceIcon } from "@/lib/icons";
 import type { SearchResult } from "@/types";
 
 interface ResourceListProps {
@@ -14,6 +16,11 @@ export function ResourceList({
 }: ResourceListProps) {
   return (
     <div>
+      <BrandIconSprite
+        slugs={resources.map((resource) =>
+          resourceIcon(resource.sourceDomain, resource.topics),
+        )}
+      />
       {resources.map((resource) => (
         <ResourceCard
           key={resource.id}

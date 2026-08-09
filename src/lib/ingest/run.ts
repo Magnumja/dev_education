@@ -80,8 +80,8 @@ async function persist(results: ProviderResult[]): Promise<{
   const now = new Date().toISOString();
   const rows = fresh.map((result) => ({
     slug: slugs.get(result.externalId)!,
-    title: result.title,
-    description: result.description,
+    title: trim(result.title, 200),
+    description: trim(result.description, 300),
     url: result.url,
     source: result.source,
     source_domain: result.sourceDomain,
@@ -184,6 +184,27 @@ async function linkTopics(
       ignoreDuplicates: true,
     });
   }
+}
+
+/**
+ * Corta textos longos demais para o que a interface mostra.
+ *
+ * A descrição é um resumo de duas linhas no card, mas nada garante isso na
+ * origem: um repositório do GitHub trazia um manifesto de 236 KB no campo de
+ * descrição. Vinte e um recursos assim somavam 1 MB, que ia inteiro para o HTML
+ * e de novo para o payload do RSC, a cada página que os listasse.
+ *
+ * O corte respeita a última palavra inteira, para não terminar no meio de uma.
+ */
+function trim(value: string | null, max: number): string | null {
+  if (!value) return null;
+
+  const clean = value.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+
+  const cut = clean.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${cut.slice(0, lastSpace > max * 0.6 ? lastSpace : max)}…`;
 }
 
 /** O provider entra no slug para dois providers não colidirem no mesmo título. */

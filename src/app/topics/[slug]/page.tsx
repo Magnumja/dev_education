@@ -45,7 +45,9 @@ export default async function TopicPage({ params }: TopicPageProps) {
 
   const [topic, { results }, user, savedIds] = await Promise.all([
     getTopicBySlug(slug),
-    search({ topics: [slug] }, { limit: 100 }),
+    // 40 em vez de 100: cada card custa ~4 KB entre HTML e payload, e ninguém
+    // percorre cem itens numa página de tecnologia sem filtrar antes.
+    search({ topics: [slug] }, { limit: 40 }),
     getCurrentUser(),
     getSavedResourceSlugs(),
   ]);
