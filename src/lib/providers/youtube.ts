@@ -36,6 +36,12 @@ export async function resolveChannelId(input: string): Promise<string> {
     ? value
     : value.match(/youtube\.com\/(@[\w.-]+|c\/[\w.-]+|user\/[\w.-]+)/)?.[1];
 
+  // Formato validado antes de virar URL: o valor entra em um `fetch` e não
+  // pode carregar barra, "..", nem parâmetro de consulta.
+  if (handle && !/^(@|c\/|user\/)[\w.-]{1,80}$/.test(handle)) {
+    throw new Error("Formato de canal inválido.");
+  }
+
   if (!handle) {
     throw new Error(
       "Não reconheci o canal. Use o @handle, a URL do canal ou o ID que começa com UC.",
