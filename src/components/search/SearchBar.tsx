@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
-import { Search } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { buttonClasses } from "@/components/ui/Button";
 
@@ -25,7 +25,31 @@ export function SearchBar({
   const [value, setValue] = useState(defaultValue);
   // id único: a barra aparece em mais de um lugar (topo e drawer).
   const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const isHero = size === "hero";
+
+  // "/" foca a busca, como em qualquer ferramenta de desenvolvedor. Ignorado
+  // enquanto a pessoa digita em outro campo, para não roubar a tecla.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey) return;
+
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      inputRef.current?.focus();
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -53,6 +77,7 @@ export function SearchBar({
         Buscar conteúdos para desenvolvedores
       </label>
       <input
+        ref={inputRef}
         id={inputId}
         name="q"
         type="search"
@@ -67,6 +92,27 @@ export function SearchBar({
           isHero ? "text-base sm:text-lg" : "text-sm",
         )}
       />
+      {value ? (
+        <button
+          type="button"
+          onClick={() => {
+            setValue("");
+            inputRef.current?.focus();
+          }}
+          aria-label="Limpar busca"
+          className="shrink-0 rounded-md p-1 text-ink-400 transition-quick hover:text-navy-900"
+        >
+          <X className={isHero ? "size-5" : "size-4"} aria-hidden />
+        </button>
+      ) : (
+        <kbd
+          aria-hidden
+          className="hidden shrink-0 rounded border border-line px-1.5 py-0.5 font-mono text-[11px] text-ink-400 sm:block"
+        >
+          /
+        </kbd>
+      )}
+
       <button
         type="submit"
         className={cn(

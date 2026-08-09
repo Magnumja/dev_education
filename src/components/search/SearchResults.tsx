@@ -5,6 +5,8 @@ import { ButtonLink } from "@/components/ui/Button";
 import { search } from "@/lib/search";
 import { buildSearchQuery, hasActiveFilters } from "@/lib/search/params";
 import { getCurrentUser, getSavedResourceSlugs } from "@/lib/auth/session";
+import Link from "next/link";
+import { suggestTerms } from "@/lib/search/aliases";
 import type { SearchFiltersState } from "@/types";
 
 /**
@@ -24,6 +26,8 @@ export async function SearchResults({
 
   if (results.length === 0) {
     const filtered = hasActiveFilters(filters);
+    const suggestions = suggestTerms(filters.query);
+
     return (
       <EmptyState
         title="Nenhum conteúdo encontrado para sua busca."
@@ -33,6 +37,24 @@ export async function SearchResults({
             : "Tente buscar um termo relacionado ou explorar as tecnologias disponíveis."
         }
       >
+        {suggestions.length > 0 ? (
+          <p className="mb-4 text-sm text-ink-500">
+            Você quis dizer{" "}
+            {suggestions.map((term, index) => (
+              <span key={term}>
+                {index > 0 ? " ou " : ""}
+                <Link
+                  href={`/search?q=${encodeURIComponent(term)}`}
+                  className="font-medium text-brand-500 hover:underline"
+                >
+                  {term}
+                </Link>
+              </span>
+            ))}
+            ?
+          </p>
+        ) : null}
+
         <div className="flex flex-wrap justify-center gap-2">
           {filtered ? (
             <ButtonLink
