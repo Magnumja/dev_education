@@ -30,7 +30,10 @@ export const metadata: Metadata = {
     title: `${SITE.name} — Aprenda sem perder tempo procurando`,
     description: SITE.description,
   },
-  icons: { icon: "/images/deveducation-icon.png" },
+  // Ícones vêm das convenções de arquivo do App Router: src/app/icon.png e
+  // src/app/apple-icon.png. Elas têm precedência sobre `metadata.icons` — era
+  // por isso que o favicon.ico padrão do create-next-app continuava aparecendo
+  // na aba, mesmo com o ícone da marca declarado aqui.
 };
 
 export default async function RootLayout({
