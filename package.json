@@ -11,7 +11,9 @@
     "icons": "tsx scripts/generate-icons.ts",
     "test": "tsx --test 'src/**/*.test.ts'",
     "ingest": "NODE_OPTIONS=--conditions=react-server tsx scripts/ingest.ts",
-    "check:github": "tsx scripts/check-github-token.ts"
+    "check:github": "tsx scripts/check-github-token.ts",
+    "classify": "NODE_OPTIONS=--conditions=react-server tsx scripts/classify.ts",
+    "publish": "NODE_OPTIONS=--conditions=react-server tsx scripts/publish.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

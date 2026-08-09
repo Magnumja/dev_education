@@ -111,3 +111,5 @@ main().catch((error) => {
   console.error("\nFalha inesperada:", (error as Error).message, "\n");
   process.exit(1);
 });
+
+export {};

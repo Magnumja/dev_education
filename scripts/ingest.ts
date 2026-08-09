@@ -98,3 +98,5 @@ run().catch((error) => {
   console.error("Ingestão interrompida:", error);
   process.exit(1);
 });
+
+export {};
