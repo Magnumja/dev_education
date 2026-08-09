@@ -73,6 +73,29 @@ export async function runDiscovery(
   };
 }
 
+/**
+ * Publica direto da fila, sem passar pelo formulário.
+ *
+ * Existe porque revisar cinquenta itens um a um em um formulário completo é
+ * inviável: a maioria só precisa de um "sim". Quem quiser ajustar nível,
+ * idioma ou tags continua tendo o formulário.
+ */
+export async function publishDiscovery(formData: FormData): Promise<void> {
+  await requireCurator();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const supabase = await createClient();
+  await supabase
+    .from("resources")
+    .update({ is_active: true, is_verified: true })
+    .eq("id", id);
+
+  revalidatePath("/admin/discover");
+  revalidatePath("/", "layout");
+}
+
 /** Descarta uma descoberta que não vale a pena catalogar. */
 export async function discardDiscovery(formData: FormData): Promise<void> {
   await requireCurator();
