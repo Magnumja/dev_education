@@ -88,12 +88,6 @@ export async function SearchResultCount({
     <p className="text-sm text-ink-500">
       <strong className="font-semibold text-navy-900">{total}</strong>{" "}
       {total === 1 ? "conteúdo encontrado" : "conteúdos encontrados"}
-      {filters.query ? (
-        <>
-          {" "}
-          para <span className="text-navy-900">“{filters.query}”</span>
-        </>
-      ) : null}
     </p>
   );
 }

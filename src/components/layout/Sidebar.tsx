@@ -13,11 +13,13 @@ import {
   Info,
   Layers,
   Plus,
+  LogOut,
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { SITE } from "@/constants";
 import type { SessionUser } from "@/types";
+import { signOut } from "@/lib/auth/actions";
 
 /**
  * Só entram itens que levam a uma página com função real. Trilhas, Salvos e
@@ -127,20 +129,32 @@ export function Sidebar({
 
       <div className="p-3">
         {user ? (
-          <Link
-            href="/profile"
-            className="flex items-center gap-3 rounded-xl border border-rail-line px-3 py-2.5 transition-quick hover:bg-rail-raised"
-          >
-            <Avatar user={user} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-rail-text-strong">
-                {user.name}
+          <div className="flex items-center gap-1 rounded-xl border border-rail-line pr-1">
+            <Link
+              href="/profile"
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-l-xl px-3 py-2.5 transition-quick hover:bg-rail-raised"
+            >
+              <Avatar user={user} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-rail-text-strong">
+                  {user.name}
+                </span>
+                <span className="block truncate text-xs text-rail-text">
+                  {user.email}
+                </span>
               </span>
-              <span className="block truncate text-xs text-rail-text">
-                {user.email}
-              </span>
-            </span>
-          </Link>
+            </Link>
+            <form action={signOut}>
+              <button
+                type="submit"
+                aria-label="Sair da conta"
+                title="Sair da conta"
+                className="rounded-lg p-2 text-rail-text transition-quick hover:bg-rail-raised hover:text-rail-text-strong"
+              >
+                <LogOut className="size-4" aria-hidden />
+              </button>
+            </form>
+          </div>
         ) : (
           <Link
             href="/login"
