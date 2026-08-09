@@ -12,6 +12,8 @@
  *   npm run ingest -- github    # só repositórios
  *   npm run ingest -- youtube   # só vídeos dos canais curados
  *   npm run ingest -- artigos   # só artigos do DEV.to
+ *   npm run ingest -- hn        # só o que foi discutido no Hacker News
+ *   npm run ingest -- so        # só as perguntas canônicas do Stack Overflow
  *
  * Nada é publicado: tudo entra despublicado, esperando a curadoria.
  */
@@ -22,6 +24,7 @@ import {
   searchTermFor,
 } from "../src/lib/providers/github";
 import { devtoTagFor, PORTUGUESE_TAGS } from "../src/lib/providers/devto";
+import { stackTagFor } from "../src/lib/providers/stackoverflow";
 
 process.loadEnvFile(".env.local");
 
@@ -58,6 +61,8 @@ async function run() {
     ingestAllDocumentation,
     ingestDevTo,
     ingestGitHub,
+    ingestHackerNews,
+    ingestStackOverflow,
     ingestYouTubeChannel,
   } = await import("../src/lib/ingest/run");
 
@@ -80,6 +85,28 @@ async function run() {
     for (const { tag, topicSlug } of tags) {
       report(tag!, await ingestDevTo(tag!, topicSlug, 30));
       await sleep(1_200); // ~30 requisições a cada 30 segundos
+    }
+  }
+
+  if (mode === "all" || mode === "hn") {
+    console.log(`\nDiscutidos no Hacker News (${TOPICS.length} tecnologias)`);
+    for (const topic of TOPICS) {
+      const term = searchTermFor(topic.slug, topic.name);
+      report(term, await ingestHackerNews(term, topic.slug, 25));
+      await sleep(900);
+    }
+  }
+
+  if (mode === "all" || mode === "so") {
+    const tags = TOPICS.map((topic) => ({
+      tag: stackTagFor(topic.slug),
+      topicSlug: topic.slug,
+    })).filter((entry) => entry.tag);
+
+    console.log(`\nPerguntas canônicas do Stack Overflow (${tags.length} tags)`);
+    for (const { tag, topicSlug } of tags) {
+      report(tag!, await ingestStackOverflow(tag!, topicSlug, 20));
+      await sleep(1_200); // 300 requisições/dia sem chave: sem pressa
     }
   }
 

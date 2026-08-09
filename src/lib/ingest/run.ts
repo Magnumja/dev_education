@@ -12,6 +12,8 @@ import {
   resolveChannelId,
 } from "@/lib/providers/youtube";
 import { fetchArticles } from "@/lib/providers/devto";
+import { fetchDiscussed } from "@/lib/providers/hackernews";
+import { fetchCanonical } from "@/lib/providers/stackoverflow";
 
 export interface IngestReport {
   provider: string;
@@ -260,6 +262,46 @@ export async function ingestDevTo(
   } catch (error) {
     return {
       provider: "DEV.to",
+      found: 0,
+      inserted: 0,
+      skipped: 0,
+      error: (error as Error).message,
+    };
+  }
+}
+
+export async function ingestHackerNews(
+  query: string,
+  topicSlug?: string,
+  limit = 20,
+): Promise<IngestReport> {
+  try {
+    const results = await fetchDiscussed(query, { topicSlug, limit });
+    const { inserted, skipped } = await persist(results);
+    return { provider: "HN", found: results.length, inserted, skipped };
+  } catch (error) {
+    return {
+      provider: "HN",
+      found: 0,
+      inserted: 0,
+      skipped: 0,
+      error: (error as Error).message,
+    };
+  }
+}
+
+export async function ingestStackOverflow(
+  tag: string,
+  topicSlug?: string,
+  limit = 15,
+): Promise<IngestReport> {
+  try {
+    const results = await fetchCanonical(tag, { topicSlug, limit });
+    const { inserted, skipped } = await persist(results);
+    return { provider: "SO", found: results.length, inserted, skipped };
+  } catch (error) {
+    return {
+      provider: "SO",
       found: 0,
       inserted: 0,
       skipped: 0,
