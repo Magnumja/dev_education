@@ -5,10 +5,17 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/Badge";
 import { createClient } from "@/lib/supabase/server";
 import { getTopicsWithCounts } from "@/lib/search/resources";
-import { discardDiscovery } from "@/lib/admin/discover-actions";
+import {
+  discardDiscovery,
+  publishDiscovery,
+} from "@/lib/admin/discover-actions";
 import { formatRelativeTime } from "@/lib/utils/format";
-import { RESOURCE_TYPE_LABELS } from "@/constants";
-import type { ResourceType } from "@/types";
+import {
+  DIFFICULTY_LABELS,
+  LANGUAGE_LABELS,
+  RESOURCE_TYPE_LABELS,
+} from "@/constants";
+import type { Difficulty, ResourceLanguage, ResourceType } from "@/types";
 
 interface DiscoveryRow {
   id: string;
@@ -18,6 +25,8 @@ interface DiscoveryRow {
   url: string;
   source_domain: string;
   resource_type: ResourceType;
+  difficulty: Difficulty | null;
+  language: ResourceLanguage;
   provider: string | null;
   provider_signals: { stars?: number; release?: string } | null;
   discovered_at: string | null;
@@ -31,7 +40,7 @@ export default async function DiscoverPage() {
     supabase
       .from("resources")
       .select(
-        "id, slug, title, description, url, source_domain, resource_type, provider, provider_signals, discovered_at",
+        "id, slug, title, description, url, source_domain, resource_type, difficulty, language, provider, provider_signals, discovered_at",
       )
       .eq("is_active", false)
       .not("provider", "is", null)
@@ -78,6 +87,14 @@ export default async function DiscoverPage() {
                       {item.provider_signals.stars.toLocaleString("pt-BR")}
                     </span>
                   ) : null}
+                  <Badge variant="outline">
+                    {LANGUAGE_LABELS[item.language]}
+                  </Badge>
+                  {item.difficulty ? (
+                    <Badge variant="brand">
+                      {DIFFICULTY_LABELS[item.difficulty]}
+                    </Badge>
+                  ) : null}
                   <span className="ml-auto text-xs text-ink-400">
                     {formatRelativeTime(item.discovered_at)}
                   </span>
@@ -98,12 +115,21 @@ export default async function DiscoverPage() {
                   </p>
                 ) : null}
 
-                <div className="mt-2.5 flex items-center gap-3">
+                <div className="mt-2.5 flex flex-wrap items-center gap-3">
+                  <form action={publishDiscovery}>
+                    <input type="hidden" name="id" value={item.id} />
+                    <button
+                      type="submit"
+                      className="rounded-md bg-brand-500 px-2.5 py-1 text-xs font-medium text-white transition-quick hover:bg-brand-600"
+                    >
+                      Publicar
+                    </button>
+                  </form>
                   <Link
                     href={`/admin/resources/${item.slug}`}
                     className="text-xs font-medium text-brand-500 transition-quick hover:text-brand-400"
                   >
-                    Revisar e publicar
+                    Ajustar antes
                   </Link>
                   <form action={discardDiscovery}>
                     <input type="hidden" name="id" value={item.id} />

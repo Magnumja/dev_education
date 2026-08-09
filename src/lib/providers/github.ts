@@ -1,6 +1,8 @@
 import "server-only";
 
 import {
+  detectDifficulty,
+  detectLanguage,
   domainOf,
   slugify,
   type ContentProvider,
@@ -116,8 +118,8 @@ function toResult(repo: GitHubRepo, topicSlug?: string): ProviderResult {
     source: "GitHub",
     sourceDomain: domainOf(repo.html_url),
     type: isExercise ? "exercise" : "repository",
-    difficulty: null,
-    language: "en",
+    difficulty: detectDifficulty(repo.full_name, repo.description),
+    language: detectLanguage(repo.description),
     thumbnailUrl: null,
     author: repo.owner.login,
     publishedAt: repo.pushed_at,

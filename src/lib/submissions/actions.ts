@@ -37,19 +37,43 @@ export async function submitResource(
 
   const supabase = await createClient();
 
-  const { data: existing } = await supabase
-    .from("resources")
-    .select("slug")
-    .eq("url", url.toString())
-    .maybeSingle<{ slug: string }>();
+  // Normaliza antes de comparar: a mesma página chega com barra final, com
+  // "www" e com parâmetros de campanha, e cada variação viraria uma sugestão
+  // nova na fila da curadoria.
+  const normalized = normalizeUrl(url);
 
-  if (existing) {
+  const [catalog, queued] = await Promise.all([
+    supabase
+      .from("resources")
+      .select("slug")
+      .eq("url", normalized)
+      .maybeSingle<{ slug: string }>(),
+    supabase
+      .from("resource_submissions")
+      .select("id, status")
+      .eq("url", normalized)
+      .in("status", ["pending", "rejected"])
+      .maybeSingle<{ id: string; status: string }>(),
+  ]);
+
+  if (catalog.data) {
     return { error: "Esse conteúdo já está no catálogo do DevEducation." };
+  }
+
+  if (queued.data?.status === "pending") {
+    return { error: "Esse link já está na fila, aguardando revisão." };
+  }
+
+  if (queued.data?.status === "rejected") {
+    return {
+      error:
+        "Esse link já foi avaliado pela curadoria e não entrou no catálogo.",
+    };
   }
 
   const { error } = await supabase.from("resource_submissions").insert({
     user_id: user.id,
-    url: url.toString(),
+    url: normalized,
     title: title || null,
     description: description || null,
   });
@@ -65,4 +89,27 @@ export async function submitResource(
     message:
       "Sugestão recebida. Nossa curadoria revisa o material antes de publicá-lo.",
   };
+}
+
+/**
+ * Forma canônica de uma URL, para comparação.
+ *
+ * Remove parâmetros de rastreio, barra final e o "www": sem isso, a mesma
+ * página entra várias vezes na fila e a curadoria revisa o mesmo material
+ * repetidas vezes.
+ */
+function normalizeUrl(url: URL): string {
+  const clean = new URL(url.toString());
+
+  for (const key of [...clean.searchParams.keys()]) {
+    if (/^(utm_|fbclid|gclid|ref|source)/i.test(key)) {
+      clean.searchParams.delete(key);
+    }
+  }
+
+  clean.hostname = clean.hostname.replace(/^www\./, "");
+  clean.hash = "";
+  clean.pathname = clean.pathname.replace(/\/+$/, "") || "/";
+
+  return clean.toString();
 }

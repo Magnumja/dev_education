@@ -1,6 +1,10 @@
 import "server-only";
 
-import type { ProviderResult } from "@/lib/providers/types";
+import {
+  detectDifficulty,
+  detectLanguage,
+  type ProviderResult,
+} from "@/lib/providers/types";
 
 /**
  * Vídeos pelo feed Atom público de um canal.
@@ -117,8 +121,8 @@ function parseFeed(
       source: "YouTube",
       sourceDomain: "youtube.com",
       type: "video",
-      difficulty: null,
-      language: options.language,
+      difficulty: detectDifficulty(title, description),
+      language: detectLanguage(title, description),
       thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
       author: decodeEntities(channelName),
       publishedAt: tagValue(entry, "published"),

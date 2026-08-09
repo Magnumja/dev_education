@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Bell, Menu, X } from "lucide-react";
+import { Bookmark, Menu, X } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { SessionUser } from "@/types";
 
 export function Topbar({
@@ -18,10 +19,20 @@ export function Topbar({
 }) {
   const searchParams = useSearchParams();
   const [menuOpen, setMenuOpen] = useState(false);
+  const panelRef = useFocusTrap<HTMLDivElement>(menuOpen);
 
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
+    if (!menuOpen) return;
+
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+
     return () => {
+      document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
   }, [menuOpen]);
@@ -44,13 +55,15 @@ export function Topbar({
           className="max-w-xl"
         />
 
+        {/* Marcador, não sino: leva aos salvos, e o projeto não tem
+            notificações. Um sino aqui prometeria algo que não existe. */}
         <Link
           href="/favorites"
           aria-label="Conteúdos salvos"
           title="Conteúdos salvos"
           className="hidden size-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-ink-500 transition-quick hover:border-brand-400 hover:text-brand-500 sm:flex"
         >
-          <Bell className="size-[18px]" aria-hidden />
+          <Bookmark className="size-[18px]" aria-hidden />
         </Link>
 
         <div className="shrink-0">
@@ -66,6 +79,7 @@ export function Topbar({
             aria-hidden
           />
           <div
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-label="Menu de navegação"

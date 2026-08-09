@@ -4,6 +4,7 @@ import { RESULTS_PER_PAGE } from "@/constants";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { searchCatalog } from "@/lib/search/catalog-search";
+import { expandQuery } from "@/lib/search/aliases";
 import type { SearchResourceRow } from "@/types/database";
 import type {
   SearchFiltersState,
@@ -19,10 +20,16 @@ import type {
  * caminhos devolvem exatamente o mesmo `SearchResponse`.
  */
 export async function search(
-  filters: Partial<SearchFiltersState>,
+  filters_: Partial<SearchFiltersState>,
   options: { limit?: number } = {},
 ): Promise<SearchResponse> {
   const pageSize = options.limit ?? RESULTS_PER_PAGE;
+
+  // Traduz apelidos ("reactjs" → "react") antes de qualquer consulta, para os
+  // dois caminhos — banco e catálogo local — enxergarem o mesmo termo.
+  const filters = filters_.query
+    ? { ...filters_, query: expandQuery(filters_.query) }
+    : filters_;
 
   if (!isSupabaseConfigured) return searchCatalog(filters, pageSize);
 

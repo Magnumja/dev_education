@@ -41,6 +41,17 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   return (
     <div className="px-4 py-6 sm:px-6">
+      <h1 className="mb-4 text-xl font-semibold tracking-tight text-navy-900">
+        {filters.query ? (
+          <>
+            Resultados para{" "}
+            <span className="text-brand-500">“{filters.query}”</span>
+          </>
+        ) : (
+          "Explorar conteúdos"
+        )}
+      </h1>
+
       <div className="flex items-center justify-between gap-4">
         <Suspense key={`count-${key}`} fallback={<Skeleton className="h-5 w-48" />}>
           <SearchResultCount filters={filters} />

@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import { Bookmark } from "lucide-react";
 import { ResourceList } from "@/components/resources/ResourceList";
 import { EmptyState } from "@/components/ui/EmptyState";
+import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
+import { RESOURCE_TYPE_LABELS } from "@/constants";
+import { cn } from "@/lib/utils/cn";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { toSearchResult } from "@/lib/search";
@@ -15,9 +18,17 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-export default async function FavoritesPage() {
+type FavoritesPageProps = {
+  searchParams: Promise<{ type?: string }>;
+};
+
+export default async function FavoritesPage({
+  searchParams,
+}: FavoritesPageProps) {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/favorites");
+
+  const { type: activeType } = await searchParams;
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -26,6 +37,7 @@ export default async function FavoritesPage() {
       "created_at, resources (slug, title, description, url, source, source_domain, resource_type, difficulty, language, thumbnail_url, author, published_at, is_verified)",
     )
     .eq("user_id", user.id)
+    .eq("resources.is_active", true)
     .order("created_at", { ascending: false });
 
   if (error) console.error("Falha ao carregar favoritos:", error);
@@ -49,6 +61,13 @@ export default async function FavoritesPage() {
 
   const savedIds = new Set(resources.map((resource) => resource.id));
 
+  // Filtro derivado do que a pessoa realmente salvou: mostrar "Vídeo" para
+  // quem não salvou nenhum vídeo só ocuparia espaço.
+  const availableTypes = [...new Set(resources.map((r) => r.type))];
+  const visible = activeType
+    ? resources.filter((resource) => resource.type === activeType)
+    : resources;
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14">
       <header>
@@ -62,9 +81,26 @@ export default async function FavoritesPage() {
         </p>
       </header>
 
+      {availableTypes.length > 1 ? (
+        <nav aria-label="Filtrar por tipo" className="mt-5 flex flex-wrap gap-2">
+          <FilterChip href="/favorites" active={!activeType}>
+            Todos
+          </FilterChip>
+          {availableTypes.map((type) => (
+            <FilterChip
+              key={type}
+              href={`/favorites?type=${type}`}
+              active={activeType === type}
+            >
+              {RESOURCE_TYPE_LABELS[type]}
+            </FilterChip>
+          ))}
+        </nav>
+      ) : null}
+
       <div className="mt-8">
-        {resources.length > 0 ? (
-          <ResourceList resources={resources} isAuthenticated savedIds={savedIds} />
+        {visible.length > 0 ? (
+          <ResourceList resources={visible} isAuthenticated savedIds={savedIds} />
         ) : (
           <EmptyState
             icon={<Bookmark className="size-5" aria-hidden />}
@@ -93,4 +129,29 @@ type FavoriteResource = Omit<
 
 interface FavoriteRow {
   resources: FavoriteResource | FavoriteResource[] | null;
+}
+
+function FilterChip({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "true" : undefined}
+      className={cn(
+        "rounded-full border px-3 py-1 text-[13px] transition-quick",
+        active
+          ? "border-navy-900 bg-navy-900 font-medium text-surface"
+          : "border-line text-ink-700 hover:border-brand-400 hover:text-brand-500",
+      )}
+    >
+      {children}
+    </Link>
+  );
 }
