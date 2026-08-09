@@ -62,7 +62,7 @@ export function Sidebar({
     <div className="flex h-full flex-col bg-rail">
       <Link
         href="/"
-        className="block px-4 pb-4 pt-6"
+        className="block px-4 pb-5 pt-7"
         aria-label={`${SITE.name} — página inicial`}
       >
         {/* Recorte de deveduclogo.png, com o texto em branco: assenta direto
@@ -71,13 +71,15 @@ export function Sidebar({
             O nome do arquivo mudou junto com a arte de propósito. O otimizador
             de imagens do Next e o cache do navegador guardam por URL: manter o
             mesmo nome faria a versão antiga continuar sendo servida. */}
+        {/* 70% da largura, centralizado: o desenho ocupa quase toda a área do
+            recorte, então usar a largura inteira encostaria nas bordas. */}
         <Image
           src="/images/deveducation-wordmark.png"
           alt={SITE.name}
           width={640}
           height={160}
           priority
-          className="h-auto w-full"
+          className="mx-auto h-auto w-[70%]"
         />
         <span className="mt-1 block px-1 text-center text-[11px] font-medium leading-none text-rail-text">
           {SITE.tagline}
