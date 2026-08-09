@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils/cn";
 import { BrandIcon } from "@/components/icons/BrandIcon";
 import { resourceIcon } from "@/lib/icons";
+import { isAllowedImageHost } from "@/lib/image-hosts";
 import type { SearchResult } from "@/types";
 
 interface ResourceCardProps {
@@ -35,7 +36,7 @@ export function ResourceCard({
         className,
       )}
     >
-      {resource.thumbnailUrl ? (
+      {isAllowedImageHost(resource.thumbnailUrl) ? (
         <ExternalResourceLink
           resourceId={resource.id}
           url={resource.url}
@@ -44,7 +45,7 @@ export function ResourceCard({
           className="relative hidden h-[84px] w-[148px] shrink-0 overflow-hidden rounded border border-line bg-surface-muted sm:block"
         >
           <Image
-            src={resource.thumbnailUrl}
+            src={resource.thumbnailUrl!}
             alt=""
             fill
             sizes="148px"

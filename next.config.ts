@@ -1,15 +1,15 @@
 import type { NextConfig } from "next";
+import { IMAGE_HOSTS } from "./src/lib/image-hosts";
 
 const nextConfig: NextConfig = {
   images: {
     // Thumbnails vêm sempre da fonte original; nada é hospedado aqui.
-    remotePatterns: [
-      { protocol: "https", hostname: "i.ytimg.com" },
-      { protocol: "https", hostname: "img.youtube.com" },
-      { protocol: "https", hostname: "opengraph.githubassets.com" },
-      { protocol: "https", hostname: "raw.githubusercontent.com" },
-      { protocol: "https", hostname: "avatars.githubusercontent.com" },
-    ],
+    // A lista mora em src/lib/image-hosts.ts porque os componentes precisam
+    // consultar exatamente a mesma coisa antes de renderizar.
+    remotePatterns: IMAGE_HOSTS.map((hostname) => ({
+      protocol: "https" as const,
+      hostname,
+    })),
   },
 };
 

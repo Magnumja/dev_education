@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils/cn";
 import type { SearchResult } from "@/types";
 import { BrandIcon, hasBrandIcon } from "@/components/icons/BrandIcon";
 import { resourceIcon } from "@/lib/icons";
+import { isAllowedImageHost } from "@/lib/image-hosts";
 
 interface ResourceTileProps {
   resource: SearchResult;
@@ -31,9 +32,9 @@ export function ResourceTile({
       )}
     >
       <div className="relative flex h-[104px] items-center justify-center overflow-hidden bg-navy-950">
-        {resource.thumbnailUrl ? (
+        {isAllowedImageHost(resource.thumbnailUrl) ? (
           <Image
-            src={resource.thumbnailUrl}
+            src={resource.thumbnailUrl!}
             alt=""
             fill
             sizes="240px"
