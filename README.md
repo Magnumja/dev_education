@@ -72,6 +72,10 @@ funcionam normalmente.
    | `supabase/migrations/0001_schema.sql` | enums, tabelas, índices, full text search e triggers |
    | `supabase/migrations/0002_rls.sql` | Row Level Security de todas as tabelas |
    | `supabase/migrations/0003_search.sql` | função `search_resources` (busca + ranking) |
+   | `supabase/migrations/0004_dashboard.sql` | destaques e histórico do painel |
+   | `supabase/migrations/0005_fixes.sql` | correções de índice e permissão |
+   | `supabase/migrations/0006_providers.sql` | procedência do conteúdo importado |
+   | `supabase/migrations/0007_click_limits.sql` | limite de repetição nas métricas |
    | `supabase/seed.sql` | catálogo curado inicial (idempotente) |
 
 3. Em **Authentication → Providers**, habilite *Email* e *GitHub*. No provider do
@@ -110,6 +114,7 @@ npm run dev      # desenvolvimento
 npm run build    # build de produção
 npm run start    # servir o build
 npm run lint     # ESLint
+npm run test     # testes de ranking e busca (node:test)
 npm run db:seed  # regenera supabase/seed.sql a partir do catálogo
 ```
 
