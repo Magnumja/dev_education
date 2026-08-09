@@ -65,10 +65,14 @@ export function Sidebar({
         className="block px-4 pb-4 pt-6"
         aria-label={`${SITE.name} — página inicial`}
       >
-        {/* Versão de texto branco, recortada de deveduclogo.png: dispensa
-            qualquer faixa atrás e assenta direto sobre o azul-marinho. */}
+        {/* Recorte de deveduclogo.png, com o texto em branco: assenta direto
+            sobre o azul-marinho, sem faixa atrás.
+
+            O nome do arquivo mudou junto com a arte de propósito. O otimizador
+            de imagens do Next e o cache do navegador guardam por URL: manter o
+            mesmo nome faria a versão antiga continuar sendo servida. */}
         <Image
-          src="/images/deveducation-logo-mark.png"
+          src="/images/deveducation-wordmark.png"
           alt={SITE.name}
           width={640}
           height={160}
