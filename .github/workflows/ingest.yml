@@ -58,7 +58,25 @@ jobs:
 
       - run: npm ci
 
+      - name: Checar segredos obrigatórios
+        id: preflight
+        run: |
+          missing=()
+          for key in NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!key}" ]; then
+              missing+=("$key")
+            fi
+          done
+
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Segredos ausentes (${missing[*]}). Ingestão será ignorada nesta execução."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Montar .env.local
+        if: ${{ steps.preflight.outputs.ready == 'true' }}
         # Os scripts leem o arquivo com process.loadEnvFile, o mesmo caminho do
         # desenvolvimento — assim não há um segundo jeito de carregar segredos.
         #
@@ -74,15 +92,17 @@ jobs:
           EOF
 
       - name: Buscar conteúdo
+        if: ${{ steps.preflight.outputs.ready == 'true' }}
         run: npm run ingest -- ${{ inputs.etapa || 'all' }}
 
       - name: Vincular tecnologias
+        if: ${{ steps.preflight.outputs.ready == 'true' }}
         run: npm run classify
 
       - name: Publicar o que tem tecnologia
         # Desligado por padrão: descoberta automática entrando publicada sem
         # revisão contraria o princípio de curadoria do projeto.
-        if: ${{ inputs.publicar == true }}
+        if: ${{ steps.preflight.outputs.ready == 'true' && inputs.publicar == true }}
         run: |
           npm run publish -- devdocs
           npm run publish -- devto
