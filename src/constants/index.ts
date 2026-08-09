@@ -6,14 +6,32 @@ import type {
   SubmissionStatus,
 } from "@/types";
 
+/**
+ * URL pública do site, usada em metadata, canonical e sitemap.
+ *
+ * Na Vercel, `VERCEL_PROJECT_PRODUCTION_URL` já traz o domínio de produção —
+ * não é preciso configurar nada para o sitemap sair correto. Só defina
+ * NEXT_PUBLIC_SITE_URL quando houver domínio próprio.
+ *
+ * A variável pode existir vazia no .env, então `??` não basta: `||` também
+ * descarta string em branco.
+ */
+function resolveSiteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicit) return explicit.replace(/\/+$/, "");
+
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  if (vercel) return `https://${vercel}`;
+
+  return "http://localhost:3000";
+}
+
 export const SITE = {
   name: "DevEducation",
   tagline: "Filtra. Organiza. Conecta.",
   description:
     "Encontre vídeos, documentações, artigos, exercícios e projetos para desenvolvedores em um só lugar.",
-  // A variável pode existir vazia no .env.local, então `??` não basta.
-  url:
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000",
+  url: resolveSiteUrl(),
 } as const;
 
 export const RESULTS_PER_PAGE = 20;
