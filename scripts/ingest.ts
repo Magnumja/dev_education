@@ -11,6 +11,7 @@
  *   npm run ingest -- docs      # só as documentações do DevDocs
  *   npm run ingest -- github    # só repositórios
  *   npm run ingest -- youtube   # só vídeos dos canais curados
+ *   npm run ingest -- artigos   # só artigos do DEV.to
  *
  * Nada é publicado: tudo entra despublicado, esperando a curadoria.
  */
@@ -20,6 +21,7 @@ import {
   deepEducationalQueries,
   searchTermFor,
 } from "../src/lib/providers/github";
+import { devtoTagFor, PORTUGUESE_TAGS } from "../src/lib/providers/devto";
 
 process.loadEnvFile(".env.local");
 
@@ -52,12 +54,33 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function run() {
   // Importado aqui dentro: o módulo lê variáveis de ambiente na avaliação, e
   // elas só existem depois do loadEnvFile acima.
-  const { ingestAllDocumentation, ingestGitHub, ingestYouTubeChannel } =
-    await import("../src/lib/ingest/run");
+  const {
+    ingestAllDocumentation,
+    ingestDevTo,
+    ingestGitHub,
+    ingestYouTubeChannel,
+  } = await import("../src/lib/ingest/run");
 
   if (mode === "all" || mode === "docs") {
     console.log("\nDocumentações (DevDocs — uma requisição, sem cota)");
     report("índice completo", await ingestAllDocumentation());
+  }
+
+  if (mode === "all" || mode === "artigos") {
+    const tags = [
+      ...TOPICS.map((topic) => ({
+        tag: devtoTagFor(topic.slug),
+        topicSlug: topic.slug as string | undefined,
+      })).filter((entry) => entry.tag),
+      // Comunidade lusófona: sem tecnologia fixa, a classificação decide depois.
+      ...PORTUGUESE_TAGS.map((tag) => ({ tag, topicSlug: undefined })),
+    ];
+
+    console.log(`\nArtigos (DEV.to — ${tags.length} tags)`);
+    for (const { tag, topicSlug } of tags) {
+      report(tag!, await ingestDevTo(tag!, topicSlug, 30));
+      await sleep(1_200); // ~30 requisições a cada 30 segundos
+    }
   }
 
   if (mode === "all" || mode === "youtube") {

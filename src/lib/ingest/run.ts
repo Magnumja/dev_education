@@ -11,6 +11,7 @@ import {
   fetchChannelVideos,
   resolveChannelId,
 } from "@/lib/providers/youtube";
+import { fetchArticles } from "@/lib/providers/devto";
 
 export interface IngestReport {
   provider: string;
@@ -69,9 +70,14 @@ async function persist(results: ProviderResult[]): Promise<{
   );
   if (fresh.length === 0) return { inserted: 0, skipped: results.length };
 
+  // Títulos diferentes podem gerar o mesmo slug depois de normalizados e
+  // cortados — dois artigos "Docker: guia..." colidem. Como o slug é UNIQUE,
+  // uma colisão derrubava a gravação inteira do lote, não só a linha repetida.
+  const slugs = await resolveSlugs(fresh);
+
   const now = new Date().toISOString();
   const rows = fresh.map((result) => ({
-    slug: uniqueSlug(result),
+    slug: slugs.get(result.externalId)!,
     title: result.title,
     description: result.description,
     url: result.url,
@@ -102,7 +108,7 @@ async function persist(results: ProviderResult[]): Promise<{
   if (error) throw new Error(error.message);
 
   const savedRows = (inserted ?? []) as { id: string; slug: string }[];
-  await linkTopics(savedRows, fresh);
+  await linkTopics(savedRows, fresh, slugs);
 
   return {
     inserted: savedRows.length,
@@ -110,10 +116,42 @@ async function persist(results: ProviderResult[]): Promise<{
   };
 }
 
+/**
+ * Garante um slug único para cada item do lote.
+ *
+ * Resolve as duas fontes de colisão: repetição dentro do próprio lote e slug
+ * que já existe no banco. O desempate usa o identificador de origem, que é
+ * estável — reimportar o mesmo item gera o mesmo slug.
+ */
+async function resolveSlugs(
+  results: ProviderResult[],
+): Promise<Map<string, string>> {
+  const supabase = createAdminClient();
+  const base = new Map(results.map((r) => [r.externalId, uniqueSlug(r)]));
+
+  const { data } = await supabase
+    .from("resources")
+    .select("slug")
+    .in("slug", [...new Set(base.values())]);
+
+  const taken = new Set(((data ?? []) as { slug: string }[]).map((r) => r.slug));
+  const final = new Map<string, string>();
+
+  for (const [externalId, candidate] of base) {
+    const livre = !taken.has(candidate);
+    const slug = livre ? candidate : `${candidate.slice(0, 60)}-${externalId}`;
+    taken.add(slug);
+    final.set(externalId, slug);
+  }
+
+  return final;
+}
+
 /** Vincula os tópicos declarados pelo provider aos recursos recém-criados. */
 async function linkTopics(
   saved: { id: string; slug: string }[],
   results: ProviderResult[],
+  slugs: Map<string, string>,
 ) {
   const wanted = [...new Set(results.flatMap((result) => result.topics))];
   if (wanted.length === 0 || saved.length === 0) return;
@@ -130,7 +168,7 @@ async function linkTopics(
   const bySlug = new Map(saved.map((row) => [row.slug, row.id]));
 
   const links = results.flatMap((result) => {
-    const resourceId = bySlug.get(uniqueSlug(result));
+    const resourceId = bySlug.get(slugs.get(result.externalId) ?? "");
     if (!resourceId) return [];
     return result.topics.flatMap((slug) => {
       const id = topicId.get(slug);
@@ -202,6 +240,26 @@ export async function ingestAllDocumentation(): Promise<IngestReport> {
   } catch (error) {
     return {
       provider: "DevDocs",
+      found: 0,
+      inserted: 0,
+      skipped: 0,
+      error: (error as Error).message,
+    };
+  }
+}
+
+export async function ingestDevTo(
+  tag: string,
+  topicSlug?: string,
+  limit = 30,
+): Promise<IngestReport> {
+  try {
+    const results = await fetchArticles(tag, { topicSlug, limit });
+    const { inserted, skipped } = await persist(results);
+    return { provider: "DEV.to", found: results.length, inserted, skipped };
+  } catch (error) {
+    return {
+      provider: "DEV.to",
       found: 0,
       inserted: 0,
       skipped: 0,
