@@ -1,4 +1,3 @@
-# DevEducation
 
 Plataforma educacional gratuita e sem fins lucrativos que **filtra, organiza e conecta**
 conteúdos de programação já disponíveis na internet.
