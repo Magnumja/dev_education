@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { SearchFilters } from "@/components/search/SearchFilters";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { Button } from "@/components/ui/Button";
 
 /** No mobile os filtros vivem em um drawer para não roubar a tela dos resultados. */
 export function FiltersDrawer({ activeCount }: { activeCount: number }) {
   const [open, setOpen] = useState(false);
+  const panelRef = useFocusTrap<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) return;
@@ -47,6 +49,7 @@ export function FiltersDrawer({ activeCount }: { activeCount: number }) {
             aria-hidden
           />
           <div
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-label="Filtros de busca"
