@@ -71,15 +71,16 @@ export function Sidebar({
             O nome do arquivo mudou junto com a arte de propósito. O otimizador
             de imagens do Next e o cache do navegador guardam por URL: manter o
             mesmo nome faria a versão antiga continuar sendo servida. */}
-        {/* 70% da largura, centralizado: o desenho ocupa quase toda a área do
-            recorte, então usar a largura inteira encostaria nas bordas. */}
+        {/* 55% da largura: o desenho preenche 94% da arte, então a marca
+            visível fica com ~116px numa barra de 256 — folga de 70px de cada
+            lado, sem competir com os itens de navegação abaixo. */}
         <Image
           src="/images/deveducation-wordmark.png"
           alt={SITE.name}
           width={640}
           height={160}
           priority
-          className="mx-auto h-auto w-[70%]"
+          className="mx-auto h-auto w-[55%]"
         />
         <span className="mt-1 block px-1 text-center text-[11px] font-medium leading-none text-rail-text">
           {SITE.tagline}
