@@ -17,12 +17,7 @@ interface DevDocsEntry {
  */
 const INDEX_URL = "https://devdocs.io/docs.json";
 
-export async function fetchDocumentation(
-  query: string,
-  options: { topicSlug?: string; limit?: number } = {},
-): Promise<ProviderResult[]> {
-  const { topicSlug, limit = 10 } = options;
-
+async function loadIndex(): Promise<DevDocsEntry[]> {
   const response = await fetch(INDEX_URL, {
     // O índice muda pouco: um dia de cache é folgado.
     next: { revalidate: 86400 },
@@ -33,20 +28,16 @@ export async function fetchDocumentation(
     throw new Error(`DevDocs respondeu ${response.status}`);
   }
 
-  const entries = (await response.json()) as DevDocsEntry[];
-  const term = query.trim().toLowerCase();
+  return (await response.json()) as DevDocsEntry[];
+}
 
-  const matches = entries.filter((entry) => {
-    if (!entry.links?.home) return false;
-    return (
-      entry.name.toLowerCase().includes(term) ||
-      entry.slug.toLowerCase().includes(term)
-    );
-  });
-
-  // Uma entrada por tecnologia: o DevDocs lista várias versões do mesmo doc.
+/** Uma entrada por tecnologia: o DevDocs lista várias versões do mesmo doc. */
+function latestPerName(entries: DevDocsEntry[]): DevDocsEntry[] {
   const byName = new Map<string, DevDocsEntry>();
-  for (const entry of matches) {
+
+  for (const entry of entries) {
+    if (!entry.links?.home) continue;
+
     const key = entry.name.toLowerCase();
     const current = byName.get(key);
     if (!current || (entry.release ?? "") > (current.release ?? "")) {
@@ -54,7 +45,37 @@ export async function fetchDocumentation(
     }
   }
 
-  return [...byName.values()].slice(0, limit).map((entry) => toResult(entry, topicSlug));
+  return [...byName.values()];
+}
+
+export async function fetchDocumentation(
+  query: string,
+  options: { topicSlug?: string; limit?: number } = {},
+): Promise<ProviderResult[]> {
+  const { topicSlug, limit = 10 } = options;
+  const term = query.trim().toLowerCase();
+
+  const matches = (await loadIndex()).filter(
+    (entry) =>
+      entry.name.toLowerCase().includes(term) ||
+      entry.slug.toLowerCase().includes(term),
+  );
+
+  return latestPerName(matches)
+    .slice(0, limit)
+    .map((entry) => toResult(entry, topicSlug));
+}
+
+/**
+ * Índice inteiro do DevDocs — centenas de documentações oficiais numa única
+ * requisição, sem chave e sem cota.
+ *
+ * É a forma mais barata de dar volume real ao catálogo: em vez de descobrir
+ * documentação uma tecnologia por vez, traz todas de uma vez e deixa a
+ * curadoria escolher. Nada é publicado automaticamente.
+ */
+export async function fetchAllDocumentation(): Promise<ProviderResult[]> {
+  return latestPerName(await loadIndex()).map((entry) => toResult(entry));
 }
 
 function toResult(entry: DevDocsEntry, topicSlug?: string): ProviderResult {

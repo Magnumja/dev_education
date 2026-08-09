@@ -3,8 +3,14 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { slugify, type ProviderResult } from "@/lib/providers/types";
 import { githubProvider } from "@/lib/providers/github";
-import { fetchDocumentation } from "@/lib/providers/devdocs";
-import { fetchChannelVideos } from "@/lib/providers/youtube";
+import {
+  fetchAllDocumentation,
+  fetchDocumentation,
+} from "@/lib/providers/devdocs";
+import {
+  fetchChannelVideos,
+  resolveChannelId,
+} from "@/lib/providers/youtube";
 
 export interface IngestReport {
   provider: string;
@@ -187,12 +193,31 @@ export async function ingestDevDocs(
   }
 }
 
+/** Índice inteiro do DevDocs: centenas de documentações numa requisição. */
+export async function ingestAllDocumentation(): Promise<IngestReport> {
+  try {
+    const results = await fetchAllDocumentation();
+    const { inserted, skipped } = await persist(results);
+    return { provider: "DevDocs", found: results.length, inserted, skipped };
+  } catch (error) {
+    return {
+      provider: "DevDocs",
+      found: 0,
+      inserted: 0,
+      skipped: 0,
+      error: (error as Error).message,
+    };
+  }
+}
+
+/** Aceita @handle, URL ou o ID do canal. */
 export async function ingestYouTubeChannel(
-  channelId: string,
+  channel: string,
   topicSlug?: string,
   limit = 10,
 ): Promise<IngestReport> {
   try {
+    const channelId = await resolveChannelId(channel);
     const results = await fetchChannelVideos(channelId, { topicSlug, limit });
     const { inserted, skipped } = await persist(results);
     return { provider: "YouTube", found: results.length, inserted, skipped };

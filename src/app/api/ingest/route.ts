@@ -7,7 +7,6 @@ import {
   ingestYouTubeChannel,
   type IngestReport,
 } from "@/lib/ingest/run";
-import { resolveChannelId } from "@/lib/providers/youtube";
 import { educationalQueries, searchTermFor } from "@/lib/providers/github";
 
 export const maxDuration = 60;
@@ -151,7 +150,7 @@ function channelList(): string[] {
 
 async function ingestChannel(entry: string): Promise<IngestReport> {
   try {
-    return await ingestYouTubeChannel(await resolveChannelId(entry), undefined, 10);
+    return await ingestYouTubeChannel(entry, undefined, 10);
   } catch (error) {
     return {
       provider: "YouTube",
