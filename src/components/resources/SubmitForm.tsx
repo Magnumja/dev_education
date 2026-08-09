@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -14,9 +14,16 @@ export function SubmitForm() {
     submitResource,
     {},
   );
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Depois de enviar, limpar o formulário deixa claro que a sugestão saiu — e
+  // evita que um segundo clique reenvie o mesmo link.
+  useEffect(() => {
+    if (state.message) formRef.current?.reset();
+  }, [state.message]);
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form ref={formRef} action={formAction} className="space-y-5">
       {state.error ? (
         <p
           role="alert"
