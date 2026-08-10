@@ -16,6 +16,21 @@ const PROTECTED = ["/favorites", "/collections", "/profile", "/submit", "/admin"
 export async function proxy(request: NextRequest) {
   if (!isSupabaseConfigured) return NextResponse.next();
 
+  // O Supabase só honra o `redirectTo` se ele estiver na lista de Redirect URLs
+  // do projeto; fora dela, devolve para o Site URL — normalmente a raiz, que
+  // não sabe trocar o código por sessão. O login falhava em silêncio por uma
+  // configuração no painel, sem nada no código para indicar o motivo.
+  //
+  // Encaminhar o código para o callback torna a autenticação tolerante a essa
+  // divergência, em vez de depender de duas listas combinarem.
+  const { pathname, searchParams } = request.nextUrl;
+  if (pathname !== "/auth/callback" && searchParams.has("code")) {
+    const callback = new URL("/auth/callback", request.url);
+    callback.searchParams.set("code", searchParams.get("code")!);
+    if (pathname !== "/") callback.searchParams.set("next", pathname);
+    return NextResponse.redirect(callback);
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -39,8 +54,6 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
 
   if (!user && PROTECTED.some((route) => pathname.startsWith(route))) {
     const loginUrl = new URL("/login", request.url);
