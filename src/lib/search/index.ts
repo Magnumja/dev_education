@@ -85,5 +85,7 @@ export function toSearchResult(row: SearchResourceRow): SearchResult {
     topics: row.topics ?? [],
     tags: row.tags ?? [],
     score: row.score,
+    rating: row.rating_avg ?? null,
+    ratingCount: row.rating_count ?? 0,
   };
 }

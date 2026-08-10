@@ -10,7 +10,6 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { DisplayNameForm } from "@/components/profile/DisplayNameForm";
 import { ResourceTile } from "@/components/dashboard/ResourceTile";
 import { TileRail } from "@/components/dashboard/TileRail";
-import { RatingSummary } from "@/components/resources/RatingSummary";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getProfileData } from "@/lib/profile/queries";
 import { getUserSnapshot } from "@/lib/search/user-snapshot";
@@ -191,7 +190,24 @@ export default async function ProfilePage() {
                 >
                   {resource.title}
                 </Link>
-                <RatingSummary average={rating} count={1} />
+                <span
+                  className="flex shrink-0 items-center gap-0.5"
+                  title={`Você deu ${rating} de 5`}
+                >
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      aria-hidden
+                      className={cn(
+                        "size-3.5",
+                        n <= rating
+                          ? "fill-brand-400 text-brand-400"
+                          : "text-line",
+                      )}
+                    />
+                  ))}
+                  <span className="sr-only">{rating} de 5</span>
+                </span>
               </li>
             ))}
           </ul>

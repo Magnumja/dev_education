@@ -48,7 +48,9 @@ returns table (
   topics        text[],
   tags          text[],
   score         real,
-  total_count   bigint
+  total_count   bigint,
+  rating_avg    real,
+  rating_count  int
 )
 language sql
 stable
@@ -63,7 +65,15 @@ as $$
   ),
   -- 1. Filtro. Nenhuma agregação aqui: só condições que os índices atendem.
   base as (
-    select r.*, n.q, n.tsq
+    select
+      r.*,
+      n.q,
+      n.tsq,
+      -- Aqui, e não em `scored`: uma coluna do mesmo SELECT não pode ser
+      -- referenciada por outra, então calcular adiante obrigaria a repetir a
+      -- subconsulta no score e na ordenação.
+      (select avg(rating)::real from resource_ratings rr where rr.resource_id = r.id) as media,
+      (select count(*)::int from resource_ratings rr where rr.resource_id = r.id) as votos
     from resources r, n
     where r.is_active
       and (p_types  is null or array_length(p_types, 1)  is null or r.resource_type = any (p_types))
@@ -132,10 +142,7 @@ as $$
             else 0
           end
         + case when b.is_verified then 12 else 0 end
-        + coalesce(
-            (select avg(rating) from resource_ratings rr where rr.resource_id = b.id),
-            0
-          ) * 3
+        + coalesce(b.media, 0) * 3
         + case
             when exists (
               select 1 from authoritative_domains d
@@ -159,13 +166,7 @@ as $$
     from scored
     order by
       case when p_sort = 'recent' then published_at end desc nulls last,
-      case
-        when p_sort = 'rating'
-        then coalesce(
-          (select avg(rating) from resource_ratings rr where rr.resource_id = scored.id),
-          0
-        )
-      end desc,
+      case when p_sort = 'rating' then coalesce(media, 0) end desc,
       computed_score desc,
       title asc
     limit greatest(p_limit, 1)
@@ -189,10 +190,16 @@ as $$
       '{}'
     ),
     p.computed_score,
-    p.total
+    p.total,
+    p.media,
+    p.votos
   from page p
+  -- Espelha exatamente a ordem de `page`. Sem repetir o critério de nota aqui,
+  -- as linhas certas eram selecionadas e depois reordenadas por relevância —
+  -- "Melhor avaliados" devolvia o conjunto correto na ordem errada.
   order by
     case when p_sort = 'recent' then p.published_at end desc nulls last,
+    case when p_sort = 'rating' then coalesce(p.media, 0) end desc,
     p.computed_score desc,
     p.title asc;
 $$;

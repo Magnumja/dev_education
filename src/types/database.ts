@@ -63,6 +63,9 @@ export interface SearchResourceRow {
   tags: string[];
   score: number;
   total_count: number;
+  /** Média das avaliações; ausente nas consultas que não a solicitam. */
+  rating_avg?: number | null;
+  rating_count?: number | null;
 }
 
 export interface SubmissionRow {

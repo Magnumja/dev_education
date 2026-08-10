@@ -61,6 +61,9 @@ export interface SearchResult {
   tags: string[];
   /** Score do ranking central — ausente quando não houve busca. */
   score?: number;
+  /** Média das avaliações, quando a origem a fornece. */
+  rating?: number | null;
+  ratingCount?: number;
 }
 
 export type SortOption = "relevance" | "rating" | "recent";

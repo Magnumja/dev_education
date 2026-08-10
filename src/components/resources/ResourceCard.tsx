@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils/cn";
 import { BrandIconRef } from "@/components/icons/BrandIconSprite";
 import { resourceIcon } from "@/lib/icons";
 import { isAllowedImageHost } from "@/lib/image-hosts";
+import { RatingSummary } from "@/components/resources/RatingSummary";
 import type { SearchResult } from "@/types";
 
 interface ResourceCardProps {
@@ -104,6 +105,13 @@ export function ResourceCard({
             <Badge variant="brand">{DIFFICULTY_LABELS[resource.difficulty]}</Badge>
           ) : null}
           <Badge variant="outline">{LANGUAGE_LABELS[resource.language]}</Badge>
+          {resource.rating ? (
+            <RatingSummary
+              average={resource.rating}
+              count={resource.ratingCount ?? 0}
+              className="mr-1"
+            />
+          ) : null}
           {resource.tags.slice(0, 3).map((tag) => (
             <Badge key={tag}>{tag}</Badge>
           ))}
