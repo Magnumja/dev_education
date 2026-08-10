@@ -21,7 +21,10 @@
   --color-surface: #ffffff;
   --color-surface-muted: #f7f9fc;
 
-  /* ── Barra lateral: escura nos dois temas ─────────────── */
+  /* ── Navegação: azul da marca, igual nos dois temas ───── */
+  /* Não usar `navy-900` aqui: ele é semântico e inverte para quase branco no
+     tema escuro, o que pintaria a navbar de branco. */
+  --color-navbar: #06174e;
   --color-rail: #030c33;
   --color-rail-raised: #0a1a4d;
   --color-rail-line: #142352;
@@ -152,6 +155,33 @@
   animation: loading-bar 1.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* ── Ícones animados dos botões da navbar ──────────────────────
+   O movimento é feito em CSS, não em JavaScript: o tema já vive no atributo
+   `data-theme` do documento, então o próprio seletor descreve os dois estados
+   e a troca acontece sem re-renderizar nada.
+
+   O sol e a lua giram um para fora e o outro para dentro, com as classes
+   `dark:` do Tailwind — o mesmo mecanismo que o resto do site já usa. Duas
+   tentativas mais elaboradas falharam no Safari: `clipPath` recortando um
+   crescente dentro de um SVG, e um disco sobreposto da cor do botão.
+
+   O marcador se preenche de baixo para cima ao receber mouse ou foco. */
+.icon-fill {
+  opacity: 0;
+  transform: scaleY(0.55);
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition:
+    transform 260ms cubic-bezier(0.2, 0, 0.2, 1),
+    opacity 260ms cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.icon-button:hover .icon-fill,
+.icon-button:focus-visible .icon-fill {
+  opacity: 1;
+  transform: none;
+}
+
 /* Quem pediu menos movimento vê o indicador parado, não ausente. */
 @media (prefers-reduced-motion: reduce) {
   .animate-loading-bar {
@@ -161,5 +191,10 @@
 
   .animate-route-loading {
     animation: route-loading-in 1ms linear 250ms backwards;
+  }
+
+  /* O ícone continua trocando de estado — o que some é o trajeto. */
+  .icon-fill {
+    transition-duration: 1ms;
   }
 }

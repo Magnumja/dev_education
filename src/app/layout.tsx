@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Suspense } from "react";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Topbar } from "@/components/layout/Topbar";
+import { Navbar } from "@/components/layout/Navbar";
+import { FloatingDock } from "@/components/layout/FloatingDock";
 import { THEME_SCRIPT } from "@/components/theme/ThemeToggle";
 import { SITE } from "@/constants";
 import { getCurrentUser, isCurator } from "@/lib/auth/session";
@@ -31,9 +31,7 @@ export const metadata: Metadata = {
     description: SITE.description,
   },
   // Ícones vêm das convenções de arquivo do App Router: src/app/icon.png e
-  // src/app/apple-icon.png. Elas têm precedência sobre `metadata.icons` — era
-  // por isso que o favicon.ico padrão do create-next-app continuava aparecendo
-  // na aba, mesmo com o ícone da marca declarado aqui.
+  // src/app/apple-icon.png. Elas têm precedência sobre `metadata.icons`.
 };
 
 export default async function RootLayout({
@@ -53,7 +51,7 @@ export default async function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className="bg-rail">
+      <body className="min-h-dvh bg-surface">
         <a
           href="#conteudo"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-brand-500 focus:px-4 focus:py-2 focus:text-sm focus:text-white"
@@ -61,20 +59,19 @@ export default async function RootLayout({
           Pular para o conteúdo
         </a>
 
-        <div className="lg:flex">
-          <aside className="fixed inset-y-0 left-0 hidden w-64 lg:block">
-            <Suspense fallback={<div className="h-full bg-rail" />}>
-              <Sidebar user={user} canCurate={isCurator(current)} />
-            </Suspense>
-          </aside>
+        <Suspense fallback={<div className="h-16 bg-navbar" />}>
+          <Navbar user={user} />
+        </Suspense>
 
-          <div className="min-w-0 flex-1 bg-surface lg:ml-64 lg:min-h-dvh lg:rounded-l-2xl">
-            <Suspense fallback={<div className="h-16" />}>
-              <Topbar user={user} canCurate={isCurator(current)} />
-            </Suspense>
-            <main id="conteudo">{children}</main>
-          </div>
-        </div>
+        {/* O espaço inferior existe para o dock flutuante não cobrir o fim da
+            página — sem ele, o último item de qualquer lista fica inalcançável. */}
+        <main id="conteudo" className="mx-auto max-w-6xl pb-28">
+          {children}
+        </main>
+
+        <Suspense fallback={null}>
+          <FloatingDock user={user} canCurate={isCurator(current)} />
+        </Suspense>
       </body>
     </html>
   );
