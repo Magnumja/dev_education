@@ -14,6 +14,8 @@ import {
 import { fetchArticles } from "@/lib/providers/devto";
 import { fetchDiscussed } from "@/lib/providers/hackernews";
 import { fetchCanonical } from "@/lib/providers/stackoverflow";
+import { fetchPapers, type CategoriaArxiv } from "@/lib/providers/arxiv";
+import { fetchOpenAccess } from "@/lib/providers/openalex";
 
 export interface IngestReport {
   provider: string;
@@ -323,6 +325,47 @@ export async function ingestStackOverflow(
   } catch (error) {
     return {
       provider: "SO",
+      found: 0,
+      inserted: 0,
+      skipped: 0,
+      error: (error as Error).message,
+    };
+  }
+}
+
+export async function ingestArxiv(
+  categoria: CategoriaArxiv,
+  topicSlug?: string,
+  limit = 100,
+  offset = 0,
+): Promise<IngestReport> {
+  try {
+    const results = await fetchPapers(categoria, { topicSlug, limit, offset });
+    const { inserted, skipped } = await persist(results);
+    return { provider: "arXiv", found: results.length, inserted, skipped };
+  } catch (error) {
+    return {
+      provider: "arXiv",
+      found: 0,
+      inserted: 0,
+      skipped: 0,
+      error: (error as Error).message,
+    };
+  }
+}
+
+export async function ingestOpenAlex(
+  query: string,
+  topicSlug?: string,
+  limit = 100,
+): Promise<IngestReport> {
+  try {
+    const results = await fetchOpenAccess(query, { topicSlug, limit });
+    const { inserted, skipped } = await persist(results);
+    return { provider: "OpenAlex", found: results.length, inserted, skipped };
+  } catch (error) {
+    return {
+      provider: "OpenAlex",
       found: 0,
       inserted: 0,
       skipped: 0,

@@ -24,7 +24,8 @@ import type { SessionUser } from "@/types";
  *
  * Ícone sozinho não comunica: cada item tem `aria-label` para leitores de tela
  * e um balão com o nome, que sobe ao passar o mouse ou ao receber foco pelo
- * teclado. O balão é `aria-hidden` porque repetiria o que o link já anuncia.
+ * teclado. O balão só mostra o título — é etiqueta, não texto de ajuda — e é
+ * `aria-hidden` porque repetiria o que o link já anuncia.
  *
  * Documentações e Exercícios saíram porque são recortes da busca, alcançáveis
  * pelos filtros de Explorar; Favoritos saiu porque já tem lugar fixo na navbar.
@@ -34,32 +35,27 @@ const ITENS = [
   {
     href: "/",
     label: "Início",
-    hint: "O que há de novo e o que você deixou pela metade",
     icon: Home,
     exact: true,
   },
   {
     href: "/search",
     label: "Explorar",
-    hint: "Busque no acervo inteiro e filtre por tipo, nível e idioma",
     icon: Compass,
   },
   {
     href: "/topics",
     label: "Tecnologias",
-    hint: "Entre por linguagem, framework ou ferramenta",
     icon: Layers,
   },
   {
     href: "/search?type=course",
     label: "Cursos",
-    hint: "Trilhas completas, do começo ao fim",
     icon: GraduationCap,
   },
   {
     href: "/submit",
     label: "Sugerir",
-    hint: "Indique um conteúdo bom que faltou aqui",
     icon: Plus,
   },
 ];
@@ -89,7 +85,6 @@ export function FloatingDock({
           {
             href: "/admin",
             label: "Curadoria",
-            hint: "Revisar o que a comunidade enviou",
             icon: ShieldCheck,
           },
         ]
@@ -97,9 +92,6 @@ export function FloatingDock({
     {
       href: user ? "/profile" : "/login",
       label: user ? "Perfil" : "Entrar",
-      hint: user
-        ? "Seus salvos, suas notas e o que você já abriu"
-        : "Salve conteúdos e avalie o que estudou",
       icon: User,
     },
   ];
@@ -119,14 +111,12 @@ export function FloatingDock({
       >
         {itens.map((item) => {
           const selecionado = ativo(item as (typeof ITENS)[number]);
-          const idBalao = `dock-${item.label.toLowerCase()}`;
 
           return (
             <li key={item.href} className="shrink-0">
               <Link
                 href={item.href}
                 aria-label={item.label}
-                aria-describedby={idBalao}
                 aria-current={selecionado ? "page" : undefined}
                 className={cn(
                   "group relative flex size-11 items-center justify-center rounded-full transition-quick",
@@ -143,36 +133,26 @@ export function FloatingDock({
                 {/* O balão nasce um pouco abaixo e menor, e sobe até o lugar:
                     o movimento é o que liga o rótulo ao ícone que o gerou.
 
-                    Ele é ancorado por `bottom-full`, e não por um deslocamento
-                    fixo, porque agora tem duas linhas e altura variável. */}
+                    Só o título: uma etiqueta de uma linha se lê no tempo de um
+                    relance, que é o tempo que o mouse fica parado ali. */}
                 <span
+                  aria-hidden
                   className={cn(
-                    // Escondido no celular: o balão de 208px centrado no
-                    // primeiro ícone escaparia pela borda esquerda da tela — e
-                    // dedo não tem "passar por cima".
-                    "pointer-events-none absolute bottom-full left-1/2 mb-3 hidden w-52 -translate-x-1/2 sm:block",
-                    "rounded-xl bg-rail-raised px-3 py-2 text-left shadow-lift",
+                    // Escondido no celular: dedo não tem "passar por cima".
+                    "pointer-events-none absolute bottom-full left-1/2 mb-2.5 hidden w-max -translate-x-1/2 sm:block",
+                    "rounded-md border border-rail-line bg-rail-raised px-3 py-1.5 shadow-lift",
+                    "text-xs font-medium text-rail-text-strong",
                     "origin-bottom translate-y-1.5 scale-90 opacity-0",
                     "transition-all duration-200 ease-out",
                     "group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100",
                     "group-focus-visible:translate-y-0 group-focus-visible:scale-100 group-focus-visible:opacity-100",
                   )}
                 >
-                  <span className="block text-xs font-semibold text-rail-text-strong">
-                    {item.label}
-                  </span>
-                  {/* O `id` fica só na descrição: o nome do item já vem do
-                      `aria-label`, e o leitor de tela repetiria os dois. */}
-                  <span
-                    id={idBalao}
-                    className="mt-0.5 block text-[11px] leading-snug text-rail-text"
-                  >
-                    {item.hint}
-                  </span>
-                  <span
-                    aria-hidden
-                    className="absolute -bottom-1 left-1/2 size-2 -translate-x-1/2 rotate-45 rounded-[2px] bg-rail-raised"
-                  />
+                  {item.label}
+                  {/* A seta desenha a própria borda e cobre a linha do balão no
+                      trecho que ela ocupa — por isso é SVG, e não um quadrado
+                      girado: um losango com borda mostraria os cantos. */}
+                  <SetaBalao className="absolute left-1/2 top-full -mt-px -translate-x-1/2" />
                 </span>
               </Link>
             </li>
@@ -180,5 +160,36 @@ export function FloatingDock({
         })}
       </ul>
     </nav>
+  );
+}
+
+/**
+ * Seta do balão, com borda contínua.
+ *
+ * O primeiro traçado é o preenchimento: a faixa reta no topo apaga a borda do
+ * balão exatamente na largura da seta, e daí desce até a ponta. O segundo é a
+ * borda, que retoma a linha interrompida e desenha as duas diagonais — é o que
+ * faz a seta parecer recortada no balão, e não colada por cima dele.
+ */
+function SetaBalao({ className }: { className?: string }) {
+  return (
+    <svg
+      width="20"
+      height="10"
+      viewBox="0 0 20 10"
+      fill="none"
+      aria-hidden
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M10.3356 7.39793L15.1924 3.02682C15.9269 2.36577 16.8801 2 17.8683 2H20V0H0V2H1.4651C2.4532 2 3.4064 2.36577 4.1409 3.02682L8.9977 7.39793C9.378 7.7402 9.9553 7.74021 10.3356 7.39793Z"
+        fill="var(--color-rail-raised)"
+      />
+      <path
+        d="M9.6667 6.65461L14.5235 2.28352C15.4416 1.45721 16.6331 1 17.8683 1H20V2H17.8683C16.8801 2 15.9269 2.36577 15.1924 3.02682L10.3356 7.39793C9.9553 7.74021 9.378 7.7402 8.9977 7.39793L4.1409 3.02682C3.4064 2.36577 2.4532 2 1.4651 2H0V1H1.4651C2.7002 1 3.8917 1.45722 4.8099 2.28352L9.6667 6.65461Z"
+        fill="var(--color-rail-line)"
+      />
+    </svg>
   );
 }

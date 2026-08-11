@@ -14,6 +14,7 @@
  *   npm run ingest -- artigos   # só artigos do DEV.to
  *   npm run ingest -- hn        # só o que foi discutido no Hacker News
  *   npm run ingest -- so        # só as perguntas canônicas do Stack Overflow
+ *   npm run ingest -- papers    # artigos científicos (arXiv + OpenAlex)
  *
  * Nada é publicado: tudo entra despublicado, esperando a curadoria.
  */
@@ -25,8 +26,51 @@ import {
 } from "../src/lib/providers/github";
 import { devtoTagFor, PORTUGUESE_TAGS } from "../src/lib/providers/devto";
 import { stackTagFor } from "../src/lib/providers/stackoverflow";
+import {
+  CATEGORIAS,
+  type CategoriaArxiv,
+} from "../src/lib/providers/arxiv";
 
 process.loadEnvFile(".env.local");
+
+/**
+ * Visão computacional e redes neurais primeiro, com mais lotes: foi o que se
+ * pediu. As demais categorias entram rasas, para o acervo não virar só CV.
+ *
+ * Cada lote traz 100 artigos a partir de um deslocamento — é assim que se vai
+ * além dos mais recentes sem repetir requisição.
+ */
+const ARXIV_LOTES: { categoria: CategoriaArxiv; offset: number }[] = [
+  ...[0, 100, 200, 300, 400, 500].map((offset) => ({
+    categoria: "cs.CV" as const,
+    offset,
+  })),
+  ...[0, 100, 200, 300].map((offset) => ({
+    categoria: "cs.NE" as const,
+    offset,
+  })),
+  ...[0, 100, 200].map((offset) => ({ categoria: "cs.LG" as const, offset })),
+  ...[0, 100].map((offset) => ({ categoria: "cs.AI" as const, offset })),
+  { categoria: "cs.CL", offset: 0 },
+  { categoria: "cs.RO", offset: 0 },
+  { categoria: "stat.ML", offset: 0 },
+];
+
+/** Termos que o OpenAlex casa contra título e resumo. */
+const OPENALEX_BUSCAS = [
+  "computer vision",
+  "convolutional neural network",
+  "neural network",
+  "deep learning",
+  "image segmentation",
+  "object detection",
+  "image classification",
+  "generative adversarial network",
+  "transformer architecture",
+  "reinforcement learning",
+  "natural language processing",
+  "self-supervised learning",
+];
 
 const [mode = "all"] = process.argv.slice(2);
 const hasToken = Boolean(process.env.GITHUB_TOKEN);
@@ -59,9 +103,11 @@ async function run() {
   // elas só existem depois do loadEnvFile acima.
   const {
     ingestAllDocumentation,
+    ingestArxiv,
     ingestDevTo,
     ingestGitHub,
     ingestHackerNews,
+    ingestOpenAlex,
     ingestStackOverflow,
     ingestYouTubeChannel,
   } = await import("../src/lib/ingest/run");
@@ -107,6 +153,31 @@ async function run() {
     for (const { tag, topicSlug } of tags) {
       report(tag!, await ingestStackOverflow(tag!, topicSlug, 20));
       await sleep(1_200); // 300 requisições/dia sem chave: sem pressa
+    }
+  }
+
+  if (mode === "all" || mode === "papers") {
+    // Todo artigo científico é vinculado ao tópico "ai": é o único que existe
+    // para a área. Se um dia houver tópicos próprios de visão computacional e
+    // redes neurais, o vínculo passa a ser por categoria.
+    console.log(
+      `\nArtigos científicos — arXiv (${ARXIV_LOTES.length} lotes, sem chave nem cota)`,
+    );
+    for (const { categoria, offset } of ARXIV_LOTES) {
+      report(
+        `${categoria} ${CATEGORIAS[categoria]} · a partir de ${offset}`,
+        await ingestArxiv(categoria, "ai", 100, offset),
+      );
+      // O arXiv pede 3 segundos entre requisições no termo de uso.
+      await sleep(3_200);
+    }
+
+    console.log(
+      `\nArtigos científicos — OpenAlex (${OPENALEX_BUSCAS.length} buscas, acesso aberto)`,
+    );
+    for (const busca of OPENALEX_BUSCAS) {
+      report(busca, await ingestOpenAlex(busca, "ai", 100));
+      await sleep(1_100); // 10 requisições/segundo é o teto; sobra folga
     }
   }
 
